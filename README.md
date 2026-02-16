@@ -2,15 +2,18 @@
 
 
 Aplikasi backend berbasis Spring Boot untuk manajemen aset sekolah, mencakup:
-    - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset, persetujuan peminjaman, persetujuan pengadaan aset, pengantian barang rusak
+  
+  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset,
+  persetujuan peminjaman, persetujuan pengadaan aset, penggantian barang rusak
 
-    - **MIS**: laporan utilisasi aset & pengadaan
+  - **MIS**: Laporan utilisasi aset & pengadaan
 
-    - **EIS**: dashboard pengadaan & peminjaman
+  - **EIS**: Dashboard pengadaan & peminjaman
 
 Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap branch anggota.
 
 ## Tech Stack
+
 - Java 11+
 - Spring Boot
 - Gradle
@@ -18,14 +21,18 @@ Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap bra
 - Docker 
  
 ## Instalasi dan Menjalankan Aplikasi
+
 1. Clone Repository:
-    git clone <repository-url>
-    cd <repository-folder>
+
+    git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-backend.git
+
+    cd ibuprofen-backend
 
 2. Menjalankan aplikasi:
     ./gradlew bootRun
 
 ## Struktur Direktori
+```
 ibuprofen-backend/
 ├── src/
 │   ├── main/
@@ -116,3 +123,4 @@ ibuprofen-backend/
 │
 ├── .gitignore
 └── README.md
+```
