@@ -1,140 +1,52 @@
-# INVENTRA DD - Inventory and Resource Asset System Sekolah Islam Dian Didaktika
+## Penjelasan Fitur Nadira Aliya Nashwa - 2306165692
+### 1. Mengajukan Pengadaan Aset (EPIC04)
+**Tujuan Fitur:**
+Mengatur proses pengajuan pengadaan aset agar:
+- Setiap kebutuhan aset terdokumentasi dengan jelas.
+- Pengadaan dilakukan berdasarkan kebutuhan yang terverifikasi.
+- Memudahkan proses review dan persetujuan pengadaan.
+- Mendukung perencanaan dan kontrol anggaran.
+- Mengurangi risiko pengadaan yang tidak diperlukan.
 
+**Alur Proses:**
+- Guru/Sarpras mengajukan pengadaan aset.
+- Status awal: DIAJUKAN.
+- Kepala Sekolah melakukan review.
+- Jika disetujui → Status berubah menjadi DISETUJUI OLEH KEPALA SEKOLAH.
+- Jika ditolak → Status berubah menjadi DITOLAK.
+- Jika disetujui oleh Kepsek → diteruskan ke Yayasan untuk review akhir.
+- Jika disetujui oleh Yayasan → Status berubah menjadi DISETUJUI OLEH YAYASAN.
+- Jika ditolak oleh Yayasan → Status berubah menjadi DITOLAK.
 
-Aplikasi backend berbasis Spring Boot untuk manajemen aset sekolah, mencakup:
-  
-  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset,
-  persetujuan peminjaman, persetujuan pengadaan aset, penggantian barang rusak
+### 2. Mengelola Persetujuan Peminjaman Aset (EPIC05)
+**Tujuan Fitur:**
+Mengatur proses review dan persetujuan peminjaman aset agar:
+- Tidak ada pengajuan peminjaman tanpa approval
+- Proses terdokumentasi dengan baik
+- Mengurangi risiko bentrok penggunaan aset.
+- Menjaga kontrol dan ketersediaan aset di setiap unit.
+Meningkatkan transparansi proses peminjaman.
 
-  - **MIS**: Laporan utilisasi aset & pengadaan
+**Alur Proses:**
+- Guru/Sarpras (lintas unit)/Siswa mengajukan peminjaman aset
+- Status awal: DIAJUKAN
+- Sarpras melakukan review
+- Jika disetujui → Status pengajuan berubah menjadi DISETUJUI
+- Jika ditolak → Status pengajuan berubah menjadi DITOLAK
 
-  - **EIS**: Dashboard pengadaan & peminjaman
+### 3. Dashboard Pengadaan Aset (EPIC10):
+**Tujuan Fitur:**
+Memberikan gambaran visual dan analisis terkait pengadaan aset untuk membantu pengambilan keputusan.
 
-Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap branch anggota.
+**Komponen Dashboard:**
+- Summary Card:
+    Menampilkan total pengadaan, total biaya, perbandingan antar unit (Khusus yayasan)
 
-## Tech Stack
+- Grafik Pengadaan per Tahun:
+    Menampilkan total biaya pengadaan dan jumlah aset pengadaan tiap tahun
 
-- Java 11+
-- Spring Boot
-- Gradle
-- Database (PostgreSQL)
-- Docker 
- 
-## Instalasi dan Menjalankan Aplikasi
+- Top 5 Aset Paling Cepat Habis
+    Menampilkan aset yang paling cepat habis / paling sering dibeli ulang.
 
-1. Clone Repository:
-
-    git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-backend.git
-
-    cd ibuprofen-backend
-
-2. Menjalankan aplikasi:
-    ./gradlew bootRun
-
-## Struktur Direktori
-```
-ibuprofen-backend/
-├── src/
-│   ├── main/
-│   │   ├── java/io/ibuprofen/inventra_dd_be/
-│   │   │   ├── InventraDdBeApplication.java
-│   │   │   ├── Aset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── Profile
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PeminjamanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PengadaanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PersetujuanPeminjamanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PersetujuanPengadaanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── Penggantian Barang Rusak
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   └── resources/
-│   │
-│   └── test/
-│   │   ├── java/io/ibuprofen/inventra_dd_be/
-│   │       └── InventraDdBeApplicationTests.java
-│
-├── .gitignore
-└── README.md
-```
-
-## Penjelasan Struktur Direktori:
-
-| Folder            | Fungsi                                                 |
-| ----------------- | ------------------------------------------------------ |
-| `config/`         | Konfigurasi khusus module (bean, config tambahan, dll) |
-| `security/`       | Pengaturan keamanan (JWT filter, role access, dsb)     |
-| `model/`          | Entity / representasi tabel database                   |
-| `repository/`     | Interface JPA untuk akses database                     |
-| `service/`        | Business logic aplikasi                                |
-| `restcontroller/` | Endpoint API (Controller REST)                         |
-| `dto/request/`    | Object untuk menerima request dari client              |
-| `dto/response/`   | Object untuk response ke client                        |
-| `util/`           | Helper / utility khusus module                         |
+- Top 5 Pengadaan dengan Biaya Terbesar
+    Menampilkan 5 transaksi pengadaan dengan nilai tertinggi.
