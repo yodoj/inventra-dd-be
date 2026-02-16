@@ -124,3 +124,17 @@ ibuprofen-backend/
 ├── .gitignore
 └── README.md
 ```
+
+## Penjelasan Struktur Direktori:
+
+| Folder            | Fungsi                                                 |
+| ----------------- | ------------------------------------------------------ |
+| `config/`         | Konfigurasi khusus module (bean, config tambahan, dll) |
+| `security/`       | Pengaturan keamanan (JWT filter, role access, dsb)     |
+| `model/`          | Entity / representasi tabel database                   |
+| `repository/`     | Interface JPA untuk akses database                     |
+| `service/`        | Business logic aplikasi                                |
+| `restcontroller/` | Endpoint API (Controller REST)                         |
+| `dto/request/`    | Object untuk menerima request dari client              |
+| `dto/response/`   | Object untuk response ke client                        |
+| `util/`           | Helper / utility khusus module                         |
