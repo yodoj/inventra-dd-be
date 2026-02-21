@@ -25,7 +25,7 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.count() == 0) {
 
             // 1. Superadmin
-            createUser("Superadmin", "admin@diandidaktika.sch.id", "admin123", Role.ADMIN, "Global");
+            createUser("Superadmin", "superadmin@diandidaktika.sch.id", "admin123", Role.ADMIN, "Global");
 
             // 2. Yayasan
             createUser("Ketua Yayasan", "yayasan@diandidaktika.sch.id", "yayasan123", Role.YAYASAN, "Pusat");
