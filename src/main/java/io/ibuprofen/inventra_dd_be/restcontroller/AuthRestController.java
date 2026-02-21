@@ -1,8 +1,9 @@
 package io.ibuprofen.inventra_dd_be.restcontroller;
 
-import io.ibuprofen.inventra_dd_be.restdto.JwtResponse;
-import io.ibuprofen.inventra_dd_be.restdto.LoginRequest;
-import io.ibuprofen.inventra_dd_be.restdto.MessageResponse;
+import io.ibuprofen.inventra_dd_be.restdto.request.LoginRequest;
+import io.ibuprofen.inventra_dd_be.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.restdto.response.JwtResponse;
+import io.ibuprofen.inventra_dd_be.restdto.response.MessageResponse;
 import io.ibuprofen.inventra_dd_be.security.jwt.JwtUtils;
 import io.ibuprofen.inventra_dd_be.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -42,8 +43,8 @@ public class AuthRestController {
                     .orElse(null);
 
             System.out.println("Login successful for user: " + userDetails.getEmail());
-            
-            return ResponseEntity.ok(JwtResponse.builder()
+
+            JwtResponse jwtResponse = JwtResponse.builder()
                     .token(jwt)
                     .id(userDetails.getId())
                     .name(userDetails.getName())
@@ -51,20 +52,22 @@ public class AuthRestController {
                     .role(role)
                     .unit(userDetails.getUnit())
                     .type("Bearer")
-                    .build());
+                    .build();
+
+            return ResponseEntity.ok(BaseResponseDTO.ok(jwtResponse, "Login successful"));
         } catch (AuthenticationException e) {
             System.err.println("Authentication failed for email: " + loginRequest.getEmail() + " | Error: " + e.getMessage());
-            return ResponseEntity.status(401).body(new MessageResponse("Error: Invalid email or password"));
+            return ResponseEntity.status(401).body(BaseResponseDTO.error(401, "Error: Invalid email or password"));
         } catch (Exception e) {
             System.err.println("Unexpected error during login for email: " + loginRequest.getEmail() + " | Error: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(new MessageResponse("Error: An unexpected error occurred"));
+            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: An unexpected error occurred"));
         }
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
         SecurityContextHolder.clearContext();
-        return ResponseEntity.ok(new MessageResponse("Logout successful"));
+        return ResponseEntity.ok(BaseResponseDTO.ok(null, "Logout successful"));
     }
 }

@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.restdto;
+package io.ibuprofen.inventra_dd_be.restdto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +13,7 @@ import java.util.UUID;
 @Builder
 public class JwtResponse {
     private String token;
+    @Builder.Default
     private String type = "Bearer";
     private UUID id;
     private String name;
