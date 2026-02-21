@@ -61,15 +61,24 @@ Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap bra
 - Docker 
  
 ## Instalasi dan Menjalankan Aplikasi
+Jalankan beberapa komando berikut ini melalui aplikasi
+terminal seperti Command Prompt, PowerShell, Windows Terminal, Bash, Zsh, atau aplikasi
+sejenis.
 
-1. Clone Repository:
+**1. Clone Repository**
+```
+git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-backend.git
+```
 
-    git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-backend.git
+**2. Masuk ke folder project**
+```
+cd ibuprofen-backend
+```
 
-    cd ibuprofen-backend
-
-2. Menjalankan aplikasi:
-    ./gradlew bootRun
+**3. Menjalankan aplikasi**
+```
+./gradlew bootRun
+```
 
 ## Struktur Direktori
 ```
@@ -163,7 +172,7 @@ ibuprofen-backend/
 │
 ├── .gitignore
 └── README.md
-```
+C
 
 ## Penjelasan Struktur Direktori:
 
