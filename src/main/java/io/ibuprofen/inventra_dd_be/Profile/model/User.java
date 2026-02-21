@@ -1,10 +1,16 @@
 package io.ibuprofen.inventra_dd_be.Profile.model;
 
+<<<<<<< HEAD
 import io.ibuprofen.inventra_dd_be.Profile.model.validation.ValidateSiswaFields;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+=======
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+>>>>>>> fcf11e9 (fixing directory structure)
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +18,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
+<<<<<<< HEAD
 @ValidateSiswaFields
+=======
+>>>>>>> fcf11e9 (fixing directory structure)
 @Entity
 @Table(name = "app_users")
 @Data
@@ -38,6 +47,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+<<<<<<< HEAD
     @NotBlank
     private String unit;
 
@@ -48,4 +58,7 @@ public class User {
     private String nisn;
 
     private String kelas;
+=======
+    private String unit;
+>>>>>>> fcf11e9 (fixing directory structure)
 }
