@@ -1,7 +1,7 @@
-package io.ibuprofen.inventra_dd_be.security.services;
+package io.ibuprofen.inventra_dd_be.Profile.security.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.ibuprofen.inventra_dd_be.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,11 +1,11 @@
-package io.ibuprofen.inventra_dd_be.restcontroller;
+package io.ibuprofen.inventra_dd_be.Profile.restcontroller;
 
-import io.ibuprofen.inventra_dd_be.restdto.request.LoginRequest;
-import io.ibuprofen.inventra_dd_be.restdto.response.BaseResponseDTO;
-import io.ibuprofen.inventra_dd_be.restdto.response.JwtResponse;
-import io.ibuprofen.inventra_dd_be.restdto.response.MessageResponse;
-import io.ibuprofen.inventra_dd_be.security.jwt.JwtUtils;
-import io.ibuprofen.inventra_dd_be.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.request.LoginRequest;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.JwtResponse;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.MessageResponse;
+import io.ibuprofen.inventra_dd_be.Profile.security.jwt.JwtUtils;
+import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

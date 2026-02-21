@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.security.jwt;
+package io.ibuprofen.inventra_dd_be.Profile.security.jwt;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

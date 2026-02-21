@@ -1,6 +1,6 @@
-package io.ibuprofen.inventra_dd_be.repository;
+package io.ibuprofen.inventra_dd_be.Profile.repository;
 
-import io.ibuprofen.inventra_dd_be.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

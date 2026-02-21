@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.restdto.response;
+package io.ibuprofen.inventra_dd_be.Profile.restdto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

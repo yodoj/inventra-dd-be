@@ -1,8 +1,8 @@
-package io.ibuprofen.inventra_dd_be.config;
+package io.ibuprofen.inventra_dd_be.Profile.config;
 
-import io.ibuprofen.inventra_dd_be.model.Role;
-import io.ibuprofen.inventra_dd_be.model.User;
-import io.ibuprofen.inventra_dd_be.repository.UserRepository;
+import io.ibuprofen.inventra_dd_be.Profile.model.Role;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;

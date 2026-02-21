@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.model;
+package io.ibuprofen.inventra_dd_be.Profile.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

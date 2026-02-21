@@ -1,8 +1,8 @@
-package io.ibuprofen.inventra_dd_be.security;
+package io.ibuprofen.inventra_dd_be.Profile.security;
 
-import io.ibuprofen.inventra_dd_be.security.jwt.AuthEntryPointJwt;
-import io.ibuprofen.inventra_dd_be.security.jwt.AuthTokenFilter;
-import io.ibuprofen.inventra_dd_be.security.services.UserDetailsServiceImpl;
+import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthEntryPointJwt;
+import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthTokenFilter;
+import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,7 +1,7 @@
-package io.ibuprofen.inventra_dd_be.security.services;
+package io.ibuprofen.inventra_dd_be.Profile.security.services;
 
-import io.ibuprofen.inventra_dd_be.model.User;
-import io.ibuprofen.inventra_dd_be.repository.UserRepository;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

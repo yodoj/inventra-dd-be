@@ -1,6 +1,6 @@
-package io.ibuprofen.inventra_dd_be.restcontroller;
+package io.ibuprofen.inventra_dd_be.Profile.restcontroller;
 
-import io.ibuprofen.inventra_dd_be.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
