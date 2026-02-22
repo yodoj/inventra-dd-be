@@ -23,6 +23,9 @@ public class UserDetailsImpl implements UserDetails {
     private String name;
     private String email;
     private String unit;
+    private String phoneNumber;
+    private String nisn;
+    private String kelas;
 
     @JsonIgnore
     private String password;
@@ -39,6 +42,9 @@ public class UserDetailsImpl implements UserDetails {
                 .email(user.getEmail())
                 .password(user.getPassword())
                 .unit(user.getUnit())
+                .phoneNumber(user.getPhoneNumber())
+                .nisn(user.getNisn())
+                .kelas(user.getKelas())
                 .authorities(authorities)
                 .build();
     }
