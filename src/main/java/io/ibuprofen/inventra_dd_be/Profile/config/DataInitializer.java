@@ -1,15 +1,16 @@
 package io.ibuprofen.inventra_dd_be.Profile.config;
 
-import io.ibuprofen.inventra_dd_be.Profile.model.Role;
-import io.ibuprofen.inventra_dd_be.Profile.model.User;
-import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
+import io.ibuprofen.inventra_dd_be.Profile.model.Role;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -79,6 +80,6 @@ public class DataInitializer implements CommandLineRunner {
 
     private String generateNISN() {
         long random = System.nanoTime() % 100000000000L;
-        return String.format("%11d", random);
+        return String.format("%011d", Math.abs(random)); // Penyesuaian postgre
     }
 }

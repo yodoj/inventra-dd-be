@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.aset.model;
+package io.ibuprofen.inventra_dd_be.Aset.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

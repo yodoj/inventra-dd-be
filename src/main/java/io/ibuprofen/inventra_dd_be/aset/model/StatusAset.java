@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.aset.model;
+package io.ibuprofen.inventra_dd_be.Aset.model;
 
 public enum StatusAset {
 
