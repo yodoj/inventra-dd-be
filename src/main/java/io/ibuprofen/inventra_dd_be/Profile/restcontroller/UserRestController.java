@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/profile")
 public class UserRestController {
 
     @Autowired
@@ -29,7 +29,7 @@ public class UserRestController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @GetMapping("/profile")
+    @GetMapping("")
     public ResponseEntity<?> getProfile() {
         try {
             // Get current authenticated user
@@ -105,7 +105,7 @@ public class UserRestController {
         }
     }
 
-    @PutMapping("/profile")
+    @PutMapping("")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateProfileRequestDTO updateRequest) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -191,7 +191,7 @@ public class UserRestController {
         }
     }
 
-    @PutMapping("/profile/password")
+    @PutMapping("/password")
     public ResponseEntity<?> updatePassword(@Valid @RequestBody UpdatePasswordRequestDTO passwordRequest) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
