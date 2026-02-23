@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.restdto.response;
+package io.ibuprofen.inventra_dd_be.Profile.restdto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,16 +8,17 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class JwtResponse {
-    private String token;
-    @Builder.Default
-    private String type = "Bearer";
+public class ProfileResponseDTO {
     private UUID id;
-    private String name;
     private String email;
+    private String name;
     private String role;
     private String unit;
+    private String phoneNumber;
+    private String password;
+    private String nisn;
+    private String kelas;
 }

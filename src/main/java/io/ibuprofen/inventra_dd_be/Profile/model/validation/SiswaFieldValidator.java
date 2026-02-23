@@ -1,9 +1,9 @@
-package io.ibuprofen.inventra_dd_be.model.validation;
+package io.ibuprofen.inventra_dd_be.Profile.model.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import io.ibuprofen.inventra_dd_be.model.User;
-import io.ibuprofen.inventra_dd_be.model.Role;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 
 public class SiswaFieldValidator implements ConstraintValidator<ValidateSiswaFields, User> {
 

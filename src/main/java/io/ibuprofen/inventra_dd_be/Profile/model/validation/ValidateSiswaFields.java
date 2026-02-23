@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.model.validation;
+package io.ibuprofen.inventra_dd_be.Profile.model.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.restdto.request;
+package io.ibuprofen.inventra_dd_be.Profile.restdto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

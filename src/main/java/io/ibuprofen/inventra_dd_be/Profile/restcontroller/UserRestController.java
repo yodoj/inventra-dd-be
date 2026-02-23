@@ -1,12 +1,12 @@
-package io.ibuprofen.inventra_dd_be.restcontroller;
+package io.ibuprofen.inventra_dd_be.Profile.restcontroller;
 
-import io.ibuprofen.inventra_dd_be.model.User;
-import io.ibuprofen.inventra_dd_be.repository.UserRepository;
-import io.ibuprofen.inventra_dd_be.restdto.request.UpdatePasswordRequestDTO;
-import io.ibuprofen.inventra_dd_be.restdto.request.UpdateProfileRequestDTO;
-import io.ibuprofen.inventra_dd_be.restdto.response.BaseResponseDTO;
-import io.ibuprofen.inventra_dd_be.restdto.response.ProfileResponseDTO;
-import io.ibuprofen.inventra_dd_be.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.request.UpdatePasswordRequestDTO;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.request.UpdateProfileRequestDTO;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.ProfileResponseDTO;
+import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
