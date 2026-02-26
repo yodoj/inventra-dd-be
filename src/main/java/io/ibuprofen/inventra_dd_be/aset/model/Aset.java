@@ -12,6 +12,8 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -25,26 +27,31 @@ public abstract class Aset {
     @Column(name = "id_aset")
     private Long id;
 
-    @Column(name = "kode_aset", unique = true, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "kode_aset", unique = true, nullable = false, columnDefinition = "VARCHAR(255)")
     private String kodeAset;
 
-    @Column(name = "nama_aset", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "nama_aset", nullable = false, columnDefinition = "VARCHAR(255)")
     private String namaAset;
 
-    @Column(name = "gambar_url_aset")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "gambar_url_aset", columnDefinition = "TEXT")
     private String gambarUrlAset;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "kategori_aset", nullable = false)
     private KategoriAset kategoriAset;
 
-    @Column(name = "unit")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "unit", columnDefinition = "VARCHAR(255)")
     private String unit;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status_aset", nullable = false)
     private StatusAset statusAset;
 
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "keterangan_aset", columnDefinition = "TEXT")
     private String keteranganAset;
 }
