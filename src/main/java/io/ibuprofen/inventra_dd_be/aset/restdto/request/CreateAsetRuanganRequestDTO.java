@@ -15,6 +15,7 @@ public class CreateAsetRuanganRequestDTO {
     @NotBlank(message = "Nama aset tidak boleh kosong")
     private String namaAset;
 
+    @NotBlank(message = "Link gambar tidak boleh kosong")
     private String gambarUrlAset;
 
     @NotNull(message = "Kategori aset tidak boleh boleh kosong")

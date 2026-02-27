@@ -24,6 +24,10 @@ public interface AsetService {
 
         AsetRuanganResponseDTO updateAsetRuangan(Long id, UpdateAsetRuanganRequestDTO request);
 
+        AsetBarangResponseDTO getAsetBarangById(Long id);
+
+        AsetRuanganResponseDTO getAsetRuanganById(Long id);
+
         void deleteAsetBarang(Long id);
 
         void deleteAsetRuangan(Long id);
