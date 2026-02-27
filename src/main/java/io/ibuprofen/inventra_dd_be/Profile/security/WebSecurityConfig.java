@@ -1,5 +1,6 @@
 package io.ibuprofen.inventra_dd_be.Profile.security;
 
+import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthAccessDeniedHandler;
 import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthEntryPointJwt;
 import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthTokenFilter;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsServiceImpl;
@@ -35,6 +36,9 @@ public class WebSecurityConfig {
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
 
+    @Autowired
+    private AuthAccessDeniedHandler accessDeniedHandler;
+
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
@@ -64,7 +68,9 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(unauthorizedHandler)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/home").permitAll()
