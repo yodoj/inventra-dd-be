@@ -229,6 +229,18 @@ public class UserRestController {
                 );
             }
 
+            // Validasi strong password (min 8 chars, uppercase, lowercase, special char)
+            String newPassword = passwordRequest.getNewPassword();
+            if (newPassword.length() < 8 ||
+                    !newPassword.matches(".*[A-Z].*") ||
+                    !newPassword.matches(".*[a-z].*") ||
+                    !newPassword.matches(".*[0-9].*") ||
+                    !newPassword.matches(".*[^A-Za-z0-9].*")) {
+                return ResponseEntity.status(400).body(
+                        BaseResponseDTO.error(400,
+                                "Error: Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, angka, dan karakter unik"));
+            }
+
             // Validasi new_password != current_password
             if (passwordRequest.getCurrentPassword().equals(passwordRequest.getNewPassword())) {
                 return ResponseEntity.status(400).body(
