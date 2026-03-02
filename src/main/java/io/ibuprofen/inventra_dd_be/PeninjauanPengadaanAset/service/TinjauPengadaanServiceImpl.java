@@ -13,32 +13,33 @@ import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.Status;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.TinjauPengadaan;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.repository.TinjauPengadaanRepository;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.tinjauPengadaanRequestDTO;
-import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.PengajuanSummary;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinjauPengadaanResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
 import lombok.RequiredArgsConstructor;
 
-@Service
+@Service("tinjauPengadaanService")
 @RequiredArgsConstructor
 @Transactional
 public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
   private final TinjauPengadaanRepository repo;
-  private final PengajuanClient pengajuanClient;
+  private final PengadaanAsetRepository pengadaanRepo;
   private final UserRepository userRepository;
 
   @Override
   public List<tinjauPengadaanResponseDTO> getAll() {
-    List<PengajuanSummary> pengadaanList = pengajuanClient.getAll();
+    List<PengadaanAset> pengadaanList = pengadaanRepo.findAll();
     if (pengadaanList == null || pengadaanList.isEmpty()) return Collections.emptyList();
 
-    List<Long> ids = pengadaanList.stream().map(PengajuanSummary::getId).toList();
-    List<TinjauPengadaan> tinjauanList = repo.findByPengadaanIdIn(ids);
+    List<UUID> ids = pengadaanList.stream().map(PengadaanAset::getIdPengadaan).toList();
+    List<TinjauPengadaan> tinjauanList = repo.findByPengadaan_IdPengadaanIn(ids);
 
-    Map<Long, Map<Role, TinjauPengadaan>> tinjauanByPengadaanAndRole =
+    Map<UUID, Map<Role, TinjauPengadaan>> tinjauanByPengadaanAndRole =
         tinjauanList.stream()
             .filter(t -> t.getPengadaanId() != null && t.getReviewerRole() != null)
             .collect(Collectors.groupingBy(
@@ -57,12 +58,8 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
                 )
             ));
 
-    // status dan alasan pakai prioritas
-    //    - kalau ada review yayasan -> pakai itu
-    //    - else kalau ada review kepsek -> pakai itu
-    //    - else default DIAJUKAN & "-"
     return pengadaanList.stream().map(p -> {
-      Map<Role, TinjauPengadaan> byRole = tinjauanByPengadaanAndRole.getOrDefault(p.getId(), Map.of());
+      Map<Role, TinjauPengadaan> byRole = tinjauanByPengadaanAndRole.getOrDefault(p.getIdPengadaan(), Map.of());
       TinjauPengadaan tY = byRole.get(Role.YAYASAN);
       TinjauPengadaan tK = byRole.get(Role.KEPSEK);
 
@@ -70,220 +67,201 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
       Status status = (pick != null && pick.getStatus() != null)
         ? pick.getStatus()
-        : p.getStatus();
+        : mapStatusFromString(p.getStatusPengadaan());
       String alasan = (pick != null && pick.getAlasan() != null && !pick.getAlasan().isBlank()) ? pick.getAlasan() : "-";
 
       return tinjauPengadaanResponseDTO.builder()
           .id(pick != null ? pick.getId() : null)
-          .idPengadaan(p.getId())
+          .idPengadaan(p.getIdPengadaan())
           .namaAset(p.getNamaAset())
           .linkGambar(p.getLinkGambar())
-          .kategori(p.getKategori())
+          .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
           .merk(p.getMerk())
           .qty(p.getQty())
+          .namaPengaju(p.getNamaPengaju())
           .estimasiHarga(p.getEstimasiHarga())
           .waktuPengadaan(p.getWaktuPengadaan())
-          .status(status)
+          .statusPengadaan(status)
           .alasan(alasan)
           .kepsekFirstReviewedAt(tK != null ? tK.getKepsekFirstReviewedAt() : null)
           .yayasanFirstReviewedAt(tY != null ? tY.getYayasanFirstReviewedAt() : null)
           .updatedAt(pick != null ? pick.getUpdatedAt() : null)
           .userId(pick != null && pick.getUser() != null ? pick.getUser().getId() : null)
+          .reviewerRole(pick != null ? pick.getReviewerRole().toString() : null)
+          .namaReviewer(pick != null && pick.getUser() != null ? pick.getUser().getName() : null)
           .build();
     }).collect(Collectors.toList());
   }
 
   @Override
-  public tinjauPengadaanResponseDTO getByPengadaanId(Long pengadaanId) {
-    PengajuanSummary p = pengajuanClient.getById(pengadaanId);
+  public tinjauPengadaanResponseDTO getByPengadaanId(UUID pengadaanId) {
+    PengadaanAset p = pengadaanRepo.findById(pengadaanId)
+        .orElseThrow(() -> new IllegalStateException("Pengadaan tidak ditemukan"));
 
     // ambil tinjauan terakhir KEPSEK dan YAYASAN
-    TinjauPengadaan tK = repo.findFirstByPengadaanIdAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.KEPSEK).orElse(null);
-    TinjauPengadaan tY = repo.findFirstByPengadaanIdAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN).orElse(null);
+    TinjauPengadaan tK = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.KEPSEK).orElse(null);
+    TinjauPengadaan tY = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN).orElse(null);
 
     // yang ditampilin default: kalau yayasan ada -> yayasan, else kepsek, else null
     TinjauPengadaan pick = (tY != null) ? tY : tK;
 
     Status status = (pick != null && pick.getStatus() != null)
         ? pick.getStatus()
-        : p.getStatus();
+        : mapStatusFromString(p.getStatusPengadaan());
 
     String alasan = (pick != null && pick.getAlasan() != null && !pick.getAlasan().isBlank())
         ? pick.getAlasan()
         : "-";
     return tinjauPengadaanResponseDTO.builder()
         .id(pick != null ? pick.getId() : null)
-        .idPengadaan(p.getId())
+        .idPengadaan(p.getIdPengadaan())
         .namaAset(p.getNamaAset())
         .linkGambar(p.getLinkGambar())
-        .kategori(p.getKategori())
+        .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
         .merk(p.getMerk())
         .qty(p.getQty())
         .estimasiHarga(p.getEstimasiHarga())
         .waktuPengadaan(p.getWaktuPengadaan())
-        .status(status)
+        .namaPengaju(p.getNamaPengaju())
+        .statusPengadaan(status)
         .alasan(alasan)
         .kepsekFirstReviewedAt(tK != null ? tK.getKepsekFirstReviewedAt() : null)
         .yayasanFirstReviewedAt(tY != null ? tY.getYayasanFirstReviewedAt() : null)
         .updatedAt(pick != null ? pick.getUpdatedAt() : null)
         .userId(pick != null && pick.getUser() != null ? pick.getUser().getId() : null)
+        .namaReviewer(pick != null && pick.getUser() != null ? pick.getUser().getName() : null)
+        .reviewerRole(pick != null ? pick.getReviewerRole().toString() : null)
         .build();
   }
 
   @Override
-  public tinjauPengadaanResponseDTO create(Long pengadaanId, tinjauPengadaanRequestDTO req) {
+public tinjauPengadaanResponseDTO create(UUID pengadaanId, tinjauPengadaanRequestDTO req) {
     User currentUser = getCurrentUserEntity();
     Role role = currentUser.getRole();
 
-    if (repo.existsByPengadaanIdAndReviewerRole(pengadaanId, role)) {
-      throw new IllegalStateException("Peninjauan untuk role ini sudah ada. Jika ingin mengubah, lakukan update.");
+    // Cek apakah ROLE INI sudah pernah review atau belum
+    if (repo.existsByPengadaan_IdPengadaanAndReviewerRole(pengadaanId, role)) {
+        throw new IllegalStateException("Anda sudah melakukan peninjauan. Gunakan menu Update untuk mengubah.");
     }
 
-    PengajuanSummary p = pengajuanClient.getById(pengadaanId);
+    PengadaanAset p = pengadaanRepo.findById(pengadaanId)
+            .orElseThrow(() -> new IllegalStateException("Pengadaan tidak ditemukan"));
 
-    // statusAwal yang dipakai validasi:
-    // - KEPSEK: pakai status dari pengajuan
-    // - YAYASAN: harus berdasarkan hasil review KEPSEK (kalau belum ada -> dianggap bukan DISETUJUI_KEPSEK)
-    Status statusAwal = p.getStatus();
+    Status statusSaatIni = mapStatusFromString(p.getStatusPengadaan());
 
-    if (role == Role.YAYASAN) {
-      TinjauPengadaan lastKepsek = repo
-          .findFirstByPengadaanIdAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.KEPSEK)
-          .orElse(null);
-
-      statusAwal = (lastKepsek != null && lastKepsek.getStatus() != null)
-          ? lastKepsek.getStatus()
-          : p.getStatus();
-    }
-
+    // Validasi Alur
     if (role == Role.KEPSEK) {
-      if (statusAwal != Status.DIAJUKAN) {
-        throw new IllegalStateException("KEPSEK hanya boleh membuat peninjauan saat status pengadaan DIAJUKAN");
-      }
-      if (!(req.getStatus() == Status.DISETUJUI_KEPSEK || req.getStatus() == Status.DITOLAK)) {
-        throw new IllegalStateException("KEPSEK saat membuat peninjauan hanya boleh memilih status DISETUJUI_KEPSEK atau DITOLAK");
-      }
+        if (statusSaatIni != Status.DIAJUKAN) {
+            throw new IllegalStateException("Kepsek hanya bisa review jika status masih DIAJUKAN.");
+        }
+    } else if (role == Role.YAYASAN) {
+        // Yayasan hanya boleh create jika Kepsek sudah setuju
+        if (statusSaatIni != Status.DISETUJUI_KEPSEK) {
+            throw new IllegalStateException("Yayasan belum bisa review sebelum disetujui Kepsek.");
+        }
     }
-
-    if (role == Role.YAYASAN) {
-      if (statusAwal != Status.DISETUJUI_KEPSEK) {
-        throw new IllegalStateException("YAYASAN hanya boleh membuat peninjauan saat sudah disetujui KEPSEK");
-      }
-      if (!(req.getStatus() == Status.DISETUJUI_YAYASAN || req.getStatus() == Status.DITOLAK)) {
-        throw new IllegalStateException("YAYASAN saat membuat peninjauan hanya boleh memilih status DISETUJUI_YAYASAN atau DITOLAK");
-      }
-    }
-
-    LocalDateTime now = LocalDateTime.now();
 
     TinjauPengadaan t = new TinjauPengadaan();
     t.setPengadaanId(pengadaanId);
     t.setUser(currentUser);
-
     t.setReviewerRole(role);
-
-    t.setStatus(req.getStatus());
+    t.setStatus(req.getStatusPengadaan());
     t.setAlasan(req.getAlasan() == null || req.getAlasan().isBlank() ? "-" : req.getAlasan());
 
+    LocalDateTime now = LocalDateTime.now();
     if (role == Role.KEPSEK) t.setKepsekFirstReviewedAt(now);
     else if (role == Role.YAYASAN) t.setYayasanFirstReviewedAt(now);
 
     TinjauPengadaan saved = repo.save(t);
+    
+    // UPDATE status di tabel utama (PengadaanAset)
+    p.setStatusPengadaan(req.getStatusPengadaan().name());
+    pengadaanRepo.save(p);
+
     return toResponse(saved, p);
-  }
+}
 
   @Override
-  public tinjauPengadaanResponseDTO update(Long pengadaanId, tinjauPengadaanRequestDTO req) {
-      PengajuanSummary p = pengajuanClient.getById(pengadaanId);
-      User currentUser = getCurrentUserEntity();
-      Role role = currentUser.getRole();
+public tinjauPengadaanResponseDTO update(UUID pengadaanId, tinjauPengadaanRequestDTO req) {
+    User currentUser = getCurrentUserEntity();
+    Role role = currentUser.getRole();
 
-      TinjauPengadaan t = repo
-          .findFirstByPengadaanIdAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, role)
-          .orElseThrow(() -> new IllegalStateException("Belum dilakukan penjinjauan sebelumnya. Jika ingin membuat peninjauan, lakukan create."));
+    // Cari tinjauan terakhir untuk ROLE INI berdasarkan pengadaanId
+    TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, role)
+            .orElseThrow(() -> new IllegalStateException("Anda belum memiliki akses peninjauan. Silakan lakukan Create terlebih dahulu."));
 
-      LocalDateTime now = LocalDateTime.now();
-
-      TinjauPengadaan yayasanReview = repo
-          .findFirstByPengadaanIdAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
-          .orElse(null);
-
-      TinjauPengadaan kepsekReview = repo
-          .findFirstByPengadaanIdAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.KEPSEK)
-          .orElse(null);
-
-      if (role == Role.KEPSEK) {
-        if (yayasanReview != null) {
-            throw new IllegalStateException(
-                "KEPSEK tidak bisa update karena Yayasan sudah melakukan review."
-            );
+    if (role == Role.KEPSEK) {
+        if (t.getKepsekFirstReviewedAt() == null) {
+            throw new IllegalStateException("Akses Ditolak: Anda belum melakukan peninjauan pertama (Create).");
         }
-
-        LocalDateTime first = t.getKepsekFirstReviewedAt();
-        if (first == null) first = t.getCreatedAt();
-
-        boolean withinTwoDays =
-            first != null && !first.plusDays(2).isBefore(now);
-
-        if (!withinTwoDays) {
-            throw new IllegalStateException(
-                "KEPSEK tidak bisa update karena sudah lewat 2 hari."
-            );
+    } else if (role == Role.YAYASAN) {
+        if (t.getYayasanFirstReviewedAt() == null) {
+            throw new IllegalStateException("Akses Ditolak: Anda belum melakukan peninjauan pertama (Create).");
         }
     }
 
-      if (role == Role.YAYASAN) {
+    // Cari data pengadaan
+    PengadaanAset p = pengadaanRepo.findById(pengadaanId)
+            .orElseThrow(() -> new IllegalStateException("Pengadaan tidak ditemukan"));
+
+    if (role == Role.KEPSEK) {
+        boolean sudahAdaYayasan = repo.existsByPengadaan_IdPengadaanAndReviewerRole(pengadaanId, Role.YAYASAN);
+        if (sudahAdaYayasan) {
+            throw new IllegalStateException("Update ditolak: Yayasan sudah memberikan tinjauan.");
+        }
+    } else if (role == Role.YAYASAN) {
         if (t.getStatus() == Status.DIBELI) {
-            throw new IllegalStateException(
-                "YAYASAN tidak bisa update karena status sudah DIBELI."
-            );
-        }
-
-        LocalDateTime first = t.getYayasanFirstReviewedAt();
-        if (first == null) first = t.getCreatedAt();
-
-        boolean withinTwoDays =
-            first != null && !first.plusDays(2).isBefore(now);
-
-        if (!withinTwoDays) {
-            throw new IllegalStateException(
-                "YAYASAN tidak bisa update karena sudah lewat 2 hari."
-            );
+            throw new IllegalStateException("Update ditolak: Status pengadaan sudah DIBELI.");
         }
     }
 
-      t.setStatus(req.getStatus());
-      t.setAlasan(
-          req.getAlasan() == null || req.getAlasan().isBlank()
-              ? "-"
-              : req.getAlasan()
-      );
-      t.setUser(currentUser);
+    LocalDateTime firstReview = (role == Role.KEPSEK) ? t.getKepsekFirstReviewedAt() : t.getYayasanFirstReviewedAt();
+    if (firstReview != null && firstReview.plusDays(2).isBefore(LocalDateTime.now())) {
+        throw new IllegalStateException("Batas waktu update (2 hari) telah berakhir.");
+    }
 
-      TinjauPengadaan saved = repo.save(t);
+    t.setStatus(req.getStatusPengadaan());
+    t.setAlasan(req.getAlasan() == null || req.getAlasan().isBlank() ? "-" : req.getAlasan());
+    t.setUser(currentUser);
+    t.setUpdatedAt(LocalDateTime.now());
 
-      return toResponse(saved, p);
-  }
+    TinjauPengadaan saved = repo.save(t);
+    p.setStatusPengadaan(req.getStatusPengadaan().name());
+    pengadaanRepo.save(p);
+
+    return toResponse(saved, p);
+}
 
 
-  private tinjauPengadaanResponseDTO toResponse(TinjauPengadaan t, PengajuanSummary p) {
+  private tinjauPengadaanResponseDTO toResponse(TinjauPengadaan t, PengadaanAset p) {
     return tinjauPengadaanResponseDTO.builder()
         .id(t.getId())
         .idPengadaan(t.getPengadaanId())
         .namaAset(p.getNamaAset())
         .linkGambar(p.getLinkGambar())
-        .kategori(p.getKategori())
+        .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
         .merk(p.getMerk())
         .qty(p.getQty())
         .estimasiHarga(p.getEstimasiHarga())
         .waktuPengadaan(p.getWaktuPengadaan())
-        .status(t.getStatus())
+        .statusPengadaan(t.getStatus())
         .alasan(t.getAlasan())
         .kepsekFirstReviewedAt(t.getKepsekFirstReviewedAt())
         .yayasanFirstReviewedAt(t.getYayasanFirstReviewedAt())
         .updatedAt(t.getUpdatedAt())
         .userId(t.getUser() != null ? t.getUser().getId() : null)
         .build();
+  }
+
+  private Status mapStatusFromString(String status) {
+    if (status == null || status.isBlank()) {
+      return Status.DIAJUKAN;
+    }
+    try {
+      return Status.valueOf(status);
+    } catch (IllegalArgumentException e) {
+      return Status.DIAJUKAN;
+    }
   }
 
   private UserDetailsImpl getCurrentUserDetails() {

@@ -12,7 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 public class tinjauPengadaanRequestDTO {
     @NotNull(message = "Status tidak boleh kosong")
-    private Status status;
+    private Status statusPengadaan;
 
     @NotEmpty(message = "Alasan tidak boleh kosong")
     private String alasan;

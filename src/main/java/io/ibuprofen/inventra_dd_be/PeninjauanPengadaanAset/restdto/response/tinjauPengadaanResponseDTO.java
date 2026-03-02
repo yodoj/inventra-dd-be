@@ -14,23 +14,25 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class tinjauPengadaanResponseDTO {
     private Long id;
-    private Long idPengadaan;
+    private UUID idPengadaan;
 
     private String namaAset;
     private String linkGambar;
     private String kategori;
     private String merk;
     private int qty;
-    private int estimasiHarga;
-    private LocalDateTime waktuPengadaan;
+    private Long estimasiHarga;
+    private String waktuPengadaan;
+    private String namaPengaju;
+    private Status statusPengadaan;
 
-    private Status status;
     private String alasan;
-
     private LocalDateTime kepsekFirstReviewedAt;
     private LocalDateTime yayasanFirstReviewedAt;
     private LocalDateTime updatedAt;
     private LocalDateTime createdAt;
 
     private UUID userId;
+    private String reviewerRole;
+    private String namaReviewer;
 }

@@ -1,6 +1,7 @@
 package io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restcontroller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,7 @@ public class TinjauPengadaanController {
 
   @GetMapping("/{pengadaanId}")
   @PreAuthorize("hasAnyAuthority('KEPSEK','YAYASAN','ADMIN')")
-  public BaseResponseDTO<tinjauPengadaanResponseDTO> getByPengadaanId(@PathVariable Long pengadaanId) {
+  public BaseResponseDTO<tinjauPengadaanResponseDTO> getByPengadaanId(@PathVariable UUID pengadaanId) {
     var result = tinjauService.getByPengadaanId(pengadaanId);
     return BaseResponseDTO.ok(result, "Data peninjauan berhasil diambil");
   }
@@ -36,7 +37,7 @@ public class TinjauPengadaanController {
   @PostMapping("/{pengadaanId}")
   @PreAuthorize("hasAnyAuthority('KEPSEK','YAYASAN','ADMIN')")
   public BaseResponseDTO<tinjauPengadaanResponseDTO> create(
-      @PathVariable Long pengadaanId,
+      @PathVariable UUID pengadaanId,
       @Valid @RequestBody tinjauPengadaanRequestDTO request
   ) {
     var result = tinjauService.create(pengadaanId, request);
@@ -46,10 +47,12 @@ public class TinjauPengadaanController {
   @PutMapping("/update/{pengadaanId}")
   @PreAuthorize("hasAnyAuthority('KEPSEK','YAYASAN','ADMIN')")
   public BaseResponseDTO<tinjauPengadaanResponseDTO> update(
-      @PathVariable Long pengadaanId,
+      @PathVariable UUID pengadaanId,
       @Valid @RequestBody tinjauPengadaanRequestDTO request
   ) {
     var result = tinjauService.update(pengadaanId, request);
     return BaseResponseDTO.ok(result, "Peninjauan berhasil diperbarui");
   }
+
+  
 }

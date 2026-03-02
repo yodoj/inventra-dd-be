@@ -1,13 +1,14 @@
 package io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 
@@ -32,8 +33,9 @@ public class TinjauPengadaan {
   @JoinColumn(name = "id_user", referencedColumnName = "id")
   private User user;
 
-  @Column(name = "id_pengadaan", nullable = false)
-  private Long pengadaanId;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "id_pengadaan", referencedColumnName = "idPengadaan", nullable = false)
+  private PengadaanAset pengadaan;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "reviewer_role", nullable = false)
@@ -73,5 +75,15 @@ public class TinjauPengadaan {
   @PreUpdate
   protected void onUpdate() {
     this.updatedAt = LocalDateTime.now();
+  }
+
+  public UUID getPengadaanId() {
+    return (pengadaan != null) ? pengadaan.getIdPengadaan() : null;
+  }
+
+  public void setPengadaanId(UUID pengadaanId) {
+    if (pengadaanId != null) {
+      this.pengadaan = PengadaanAset.builder().idPengadaan(pengadaanId).build();
+    }
   }
 }
