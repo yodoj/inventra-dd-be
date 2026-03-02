@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UUID> {
-    List<PengadaanAset> findByUserId(java.util.UUID userId);
+    List<PengadaanAset> findByUserId_Id(UUID userId);
 }

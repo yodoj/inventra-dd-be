@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -38,7 +39,7 @@ public class PengadaanAsetResponse {
     private Long estimasiHarga;
 
     @JsonProperty("tanggal_pengadaan")
-    private String tanggalPengadaan;
+    private LocalDate tanggalPengadaan;
 
     @JsonProperty("kategori")
     private KategoriAset kategori;

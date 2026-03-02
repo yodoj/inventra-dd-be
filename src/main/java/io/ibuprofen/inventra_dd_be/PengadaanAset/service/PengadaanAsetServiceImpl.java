@@ -4,13 +4,18 @@ import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaanAsetRequestDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetResponse;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,14 +25,19 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     @Autowired
     private PengadaanAsetRepository pengadaanRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
+    @Transactional
     public PengadaanAsetResponse createPengadaan(CreatePengadaanAsetRequestDTO request) {
         UserDetailsImpl userDetails = getCurrentUser();
-        Set<String> roles = userDetails.getAuthorities().stream()
-                .map(item -> item.getAuthority())
-                .collect(Collectors.toSet());
+        
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new NoSuchElementException("User tidak ditemukan"));
 
         PengadaanAset pengadaan = new PengadaanAset();
+        pengadaan.setUserId(user);
         pengadaan.setNamaAset(request.getNamaAset());
         pengadaan.setKategoriAset(request.getKategoriAset());
         pengadaan.setMerk(request.getMerk());
@@ -37,18 +47,19 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setLinkGambar(request.getLinkGambar());
         
         pengadaan.setStatusPengadaan("DIAJUKAN");
-        pengadaan.setNamaPengaju(userDetails.getName()); 
-        pengadaan.setUserId(userDetails.getId()); 
+        pengadaan.setWaktuPengajuan(LocalDateTime.now());
+        pengadaan.setReviewPengajuan(null);
+
+        Set<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toSet());
 
         if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
-            if (request.getUnit() == null || request.getUnit().isEmpty()) {
+            if (request.getUnit() == null || request.getUnit().isBlank()) {
                 throw new IllegalArgumentException("Admin wajib menentukan unit untuk pengadaan ini.");
             }
             pengadaan.setUnit(request.getUnit());
         } else {
-            if (request.getUnit() != null && !request.getUnit().isEmpty() && !request.getUnit().equals(userDetails.getUnit())) {
-                throw new IllegalArgumentException("Anda hanya bisa membuat pengajuan untuk unit Anda sendiri: " + userDetails.getUnit());
-            }
             pengadaan.setUnit(userDetails.getUnit());
         }
 
@@ -60,7 +71,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     public List<PengadaanAsetResponse> getAllPengadaan() {
         UserDetailsImpl userDetails = getCurrentUser();
         
-        List<PengadaanAset> results = pengadaanRepository.findByUserId(userDetails.getId());
+        List<PengadaanAset> results = pengadaanRepository.findByUserId_Id(userDetails.getId());
 
         return results.stream()
                 .map(this::mapToResponse)
@@ -69,7 +80,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
 
     private UserDetailsImpl getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (UserDetailsImpl) authentication.getPrincipal(); 
+        return (UserDetailsImpl) authentication.getPrincipal();
     }
 
     private PengadaanAsetResponse mapToResponse(PengadaanAset p) {
