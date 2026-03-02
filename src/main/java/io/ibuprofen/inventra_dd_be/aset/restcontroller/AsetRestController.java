@@ -8,7 +8,11 @@ import io.ibuprofen.inventra_dd_be.Aset.restdto.response.AsetBarangResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.AsetRuanganResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.service.AsetService;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
+import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import jakarta.validation.Valid;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,17 +45,30 @@ public class AsetRestController {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        try {
-            if (page < 0 || size < 1) {
-                return ResponseEntity.badRequest()
-                        .body(BaseResponseDTO.error(400, "Error: Parameter page atau size tidak valid"));
-            }
-            Pageable pageable = PageRequest.of(page, size);
-            Page<AsetBarangResponseDTO> result = asetService.getAsetBarang(unit, kategori, status, search, pageable);
-            return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset barang retrieved successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
+        if (page < 0 || size < 1) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter page atau size tidak valid"));
         }
+
+        if (unit != null && !unit.isEmpty() && !isValidUnit(unit)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400,
+                            "Error: Parameter unit tidak valid. Harus salah satu dari (KB-TK, SD, SMP, SMA)"));
+        }
+
+        if (kategori != null && !kategori.isEmpty() && !isValidKategoriBarang(kategori)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter kategori barang tidak valid"));
+        }
+
+        if (status != null && !status.isEmpty() && !isValidStatus(status)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter status aset tidak valid"));
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AsetBarangResponseDTO> result = asetService.getAsetBarang(unit, kategori, status, search, pageable);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset barang retrieved successfully"));
     }
 
     @GetMapping("/ruangan")
@@ -63,108 +80,110 @@ public class AsetRestController {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        try {
-            if (page < 0 || size < 1) {
-                return ResponseEntity.badRequest()
-                        .body(BaseResponseDTO.error(400, "Error: Parameter page atau size tidak valid"));
-            }
-            Pageable pageable = PageRequest.of(page, size);
-            Page<AsetRuanganResponseDTO> result = asetService.getAsetRuangan(unit, kategori, status, search, pageable);
-            return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset ruangan retrieved successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
+        if (page < 0 || size < 1) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter page atau size tidak valid"));
         }
+
+        if (unit != null && !unit.isEmpty() && !isValidUnit(unit)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400,
+                            "Error: Parameter unit tidak valid. Harus salah satu dari (KB-TK, SD, SMP, SMA)"));
+        }
+
+        if (kategori != null && !kategori.isEmpty() && !isValidKategoriRuangan(kategori)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter kategori ruangan tidak valid"));
+        }
+
+        if (status != null && !status.isEmpty() && !isValidStatus(status)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter status aset tidak valid"));
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AsetRuanganResponseDTO> result = asetService.getAsetRuangan(unit, kategori, status, search, pageable);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset ruangan retrieved successfully"));
     }
 
     @PostMapping("/barang")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> createAsetBarang(@Valid @RequestBody CreateAsetBarangRequestDTO request) {
-        try {
-            AsetBarangResponseDTO result = asetService.createAsetBarang(request);
-            return ResponseEntity.status(201).body(BaseResponseDTO.ok(result, "Aset barang created successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(BaseResponseDTO.error(400, "Error: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
-        }
+        AsetBarangResponseDTO result = asetService.createAsetBarang(request);
+        return ResponseEntity.status(201).body(BaseResponseDTO.created(result, "Aset barang created successfully"));
     }
 
     @PostMapping("/ruangan")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> createAsetRuangan(@Valid @RequestBody CreateAsetRuanganRequestDTO request) {
-        try {
-            AsetRuanganResponseDTO result = asetService.createAsetRuangan(request);
-            return ResponseEntity.status(201).body(BaseResponseDTO.ok(result, "Aset ruangan created successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(BaseResponseDTO.error(400, "Error: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
-        }
+        AsetRuanganResponseDTO result = asetService.createAsetRuangan(request);
+        return ResponseEntity.status(201)
+                .body(BaseResponseDTO.created(result, "Aset ruangan created successfully"));
+    }
+
+    @GetMapping("/barang/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SARPRAS', 'YAYASAN', 'GURU', 'SISWA', 'KEPSEK')")
+    public ResponseEntity<?> getAsetBarangById(@PathVariable Long id) {
+        AsetBarangResponseDTO result = asetService.getAsetBarangById(id);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset barang retrieved successfully"));
+    }
+
+    @GetMapping("/ruangan/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SARPRAS', 'YAYASAN', 'GURU', 'SISWA', 'KEPSEK')")
+    public ResponseEntity<?> getAsetRuanganById(@PathVariable Long id) {
+        AsetRuanganResponseDTO result = asetService.getAsetRuanganById(id);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan retrieved successfully"));
     }
 
     @PutMapping("/barang/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> updateAsetBarang(@PathVariable Long id,
             @Valid @RequestBody UpdateAsetBarangRequestDTO request) {
-        try {
-            AsetBarangResponseDTO result = asetService.updateAsetBarang(id, request);
-            return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset barang updated successfully"));
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "Error: " + e.getMessage()));
-        } catch (org.springframework.security.access.AccessDeniedException e) {
-            return ResponseEntity.status(403).body(BaseResponseDTO.error(403, "Error: " + e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(BaseResponseDTO.error(400, "Error: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
-        }
+        AsetBarangResponseDTO result = asetService.updateAsetBarang(id, request);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset barang updated successfully"));
     }
 
     @PutMapping("/ruangan/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> updateAsetRuangan(@PathVariable Long id,
             @Valid @RequestBody UpdateAsetRuanganRequestDTO request) {
-        try {
-            AsetRuanganResponseDTO result = asetService.updateAsetRuangan(id, request);
-            return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan updated successfully"));
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "Error: " + e.getMessage()));
-        } catch (org.springframework.security.access.AccessDeniedException e) {
-            return ResponseEntity.status(403).body(BaseResponseDTO.error(403, "Error: " + e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(BaseResponseDTO.error(400, "Error: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
-        }
+        AsetRuanganResponseDTO result = asetService.updateAsetRuangan(id, request);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan updated successfully"));
     }
 
     @DeleteMapping("/barang/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> deleteAsetBarang(@PathVariable Long id) {
-        try {
-            asetService.deleteAsetBarang(id);
-            return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset barang deleted successfully"));
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "Error: " + e.getMessage()));
-        } catch (org.springframework.security.access.AccessDeniedException e) {
-            return ResponseEntity.status(403).body(BaseResponseDTO.error(403, "Error: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
-        }
+        asetService.deleteAsetBarang(id);
+        return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset barang deleted successfully"));
     }
 
     @DeleteMapping("/ruangan/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> deleteAsetRuangan(@PathVariable Long id) {
+        asetService.deleteAsetRuangan(id);
+        return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset ruangan deleted successfully"));
+    }
+
+    private boolean isValidUnit(String unit) {
+        List<String> validUnits = Arrays.asList("KB-TK", "SD", "SMP", "SMA");
+        return validUnits.contains(unit);
+    }
+
+    private boolean isValidStatus(String status) {
         try {
-            asetService.deleteAsetRuangan(id);
-            return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset ruangan deleted successfully"));
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "Error: " + e.getMessage()));
-        } catch (org.springframework.security.access.AccessDeniedException e) {
-            return ResponseEntity.status(403).body(BaseResponseDTO.error(403, "Error: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: " + e.getMessage()));
+            StatusAset.valueOf(status);
+            return true;
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return false;
         }
+    }
+
+    private boolean isValidKategoriBarang(String kategori) {
+        return kategori.equals("BARANG_HABIS_PAKAI") || kategori.equals("BARANG_TIDAK_HABIS_PAKAI");
+    }
+
+    private boolean isValidKategoriRuangan(String kategori) {
+        return kategori.equals("RUANG_KELAS") || kategori.equals("RUANG_NON_KELAS");
     }
 }

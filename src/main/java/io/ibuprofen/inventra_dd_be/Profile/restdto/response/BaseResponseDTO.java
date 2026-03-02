@@ -22,6 +22,14 @@ public class BaseResponseDTO<T> {
                 .build();
     }
 
+    public static <T> BaseResponseDTO<T> created(T data, String message) {
+        return BaseResponseDTO.<T>builder()
+                .status(201)
+                .message(message)
+                .data(data)
+                .build();
+    }
+
     public static <T> BaseResponseDTO<T> error(int status, String message) {
         return BaseResponseDTO.<T>builder()
                 .status(status)

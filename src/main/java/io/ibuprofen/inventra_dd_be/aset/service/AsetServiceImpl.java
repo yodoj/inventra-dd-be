@@ -249,6 +249,22 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
+    public AsetBarangResponseDTO getAsetBarangById(Long id) {
+        AsetBarang asetBarang = asetBarangRepository.findById(id)
+                .orElseThrow(
+                        () -> new java.util.NoSuchElementException("Aset barang dengan ID " + id + " tidak ditemukan"));
+        return mapToAsetBarangDTO(asetBarang);
+    }
+
+    @Override
+    public AsetRuanganResponseDTO getAsetRuanganById(Long id) {
+        AsetRuangan asetRuangan = asetRuanganRepository.findById(id)
+                .orElseThrow(() -> new java.util.NoSuchElementException(
+                        "Aset ruangan dengan ID " + id + " tidak ditemukan"));
+        return mapToAsetRuanganDTO(asetRuangan);
+    }
+
+    @Override
     public void deleteAsetBarang(Long id) {
         UserDetailsImpl userDetails = getCurrentUser();
         Set<String> roles = userDetails.getAuthorities().stream()
