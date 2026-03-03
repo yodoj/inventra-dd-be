@@ -36,7 +36,7 @@ public class TinjauPengadaan {
   private User user;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "id_pengadaan", referencedColumnName = "idPengadaan", nullable = false)
+  @JoinColumn(name = "id_pengadaan", nullable = false)
   private PengadaanAset pengadaan;
 
   @Enumerated(EnumType.STRING)

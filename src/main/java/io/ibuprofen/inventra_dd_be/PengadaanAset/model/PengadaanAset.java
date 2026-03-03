@@ -30,7 +30,7 @@ public class PengadaanAset {
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User userId;
 
-    @Column(name = "nama_aset", nullable = false, columnDefinition = "VARCHAR(255")
+    @Column(name = "nama_aset", nullable = false, columnDefinition = "VARCHAR(255)")
     private String namaAset;
 
     @Enumerated(EnumType.STRING)

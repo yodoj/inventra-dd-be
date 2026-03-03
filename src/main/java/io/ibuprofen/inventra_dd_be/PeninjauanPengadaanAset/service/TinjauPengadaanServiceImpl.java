@@ -220,11 +220,13 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         LocalDateTime now = LocalDateTime.now();
         if (role == Role.KEPSEK) t.setKepsekFirstReviewedAt(now);
         else if (role == Role.YAYASAN) t.setYayasanFirstReviewedAt(now);
+        t.setCreatedAt(now);
 
         TinjauPengadaan saved = repo.save(t);
         
         // UPDATE status di tabel utama (PengadaanAset)
         p.setStatusPengadaan(req.getStatusPengadaan().name());
+        p.setReviewPengajuan(req.getAlasan() == null || req.getAlasan().isBlank() ? "-" : req.getAlasan());
         pengadaanRepo.save(p);
 
         return toResponse(saved, p);
@@ -291,6 +293,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
         TinjauPengadaan saved = repo.save(t);
         p.setStatusPengadaan(req.getStatusPengadaan().name());
+        p.setReviewPengajuan(req.getAlasan() == null || req.getAlasan().isBlank() ? "-" : req.getAlasan());
         pengadaanRepo.save(p);
 
         return toResponse(saved, p);
@@ -358,6 +361,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         .waktuPengadaan(p.getWaktuPengadaan())
         .statusPengadaan(t.getStatus())
         .alasan(t.getAlasan())
+        .createdAt(t.getCreatedAt())
         .kepsekFirstReviewedAt(t.getKepsekFirstReviewedAt())
         .yayasanFirstReviewedAt(t.getYayasanFirstReviewedAt())
         .updatedAt(t.getUpdatedAt())
