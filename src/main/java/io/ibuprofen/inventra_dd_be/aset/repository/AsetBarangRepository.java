@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 
 @Repository
 public interface AsetBarangRepository extends JpaRepository<AsetBarang, Long> {
@@ -36,4 +37,6 @@ public interface AsetBarangRepository extends JpaRepository<AsetBarang, Long> {
         Integer findMaxNumericCode();
 
         Optional<AsetBarang> findTopByOrderByKodeAsetDesc();
+
+        Optional<AsetBarang> findByNamaAsetAndMerkAsetAndUnit(String namaAset, String merk, String unit);
 }

@@ -3,6 +3,8 @@ package io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -58,6 +60,12 @@ public class TinjauPengadaan {
 
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
+
+  @Column(name = "bukti_pembelian")
+  private String buktiPembelian;
+
+  @Column(name = "harga")
+  private Long harga;
 
   @PrePersist
   protected void onCreate() {

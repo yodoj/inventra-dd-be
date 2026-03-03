@@ -3,8 +3,12 @@ package io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restcontroller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.tinjauPengadaanRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinjauPengadaanResponseDTO;
@@ -18,7 +22,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TinjauPengadaanController {
 
-  private final TinjauPengadaanService tinjauService;
+  @Autowired
+  private  TinjauPengadaanService tinjauService;
 
   @GetMapping("/all")
   @PreAuthorize("hasAnyAuthority('KEPSEK','YAYASAN','ADMIN')")
@@ -52,6 +57,14 @@ public class TinjauPengadaanController {
   ) {
     var result = tinjauService.update(pengadaanId, request);
     return BaseResponseDTO.ok(result, "Peninjauan berhasil diperbarui");
+  }
+
+  @PostMapping(value = "/bukti/{pengadaanId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<?> beli(
+          @PathVariable UUID pengadaanId,
+          @RequestParam("harga") Long harga,
+          @RequestParam("buktiPembelian") MultipartFile file) {
+      return ResponseEntity.ok(tinjauService.beli(pengadaanId, harga, file));
   }
 
   

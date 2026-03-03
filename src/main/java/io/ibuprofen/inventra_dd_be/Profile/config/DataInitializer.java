@@ -25,9 +25,13 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     PasswordEncoder passwordEncoder;
 
+    @Autowired
+    PengadaanAsetRepository pengadaanAsetRepository;
+
     @Override
     public void run(String... args) throws Exception {
         seedUsers();
+        seedPengadaanAset();
     }
 
     private void seedUsers() {
@@ -48,6 +52,65 @@ public class DataInitializer implements CommandLineRunner {
                 createUser("Siswa " + unit, "siswa." + unitLower + "@diandidaktika.sch.id", "password123", Role.SISWA, unit, generateNISN(), unit);
             }
             System.out.println(">>> Dummy users seeded successfully!");
+        }
+    }
+
+    private void seedPengadaanAset() {
+        if (pengadaanAsetRepository.count() == 0) {
+            List<PengadaanAset> dummyAsets = Arrays.asList(
+                PengadaanAset.builder()
+                    .namaAset("Kertas Folio")
+                    .kategoriAset(KategoriAset.BARANG_HABIS_PAKAI)
+                    .merk("Sinar Dunia")
+                    .qty(50)
+                    .estimasiHarga(55000L)
+                    .waktuPengadaan("2026-4-1")
+                    .linkGambar("https://www.static-src.com/wcsstore/Indraprastha/images/catalog/full//catalog-image/96/MTA-144003649/brd-44261_kertas-double-folio-bergaris-sidu-1-lembar_full01-31f4f9a6.jpg")
+                    .unit("SMA").build(),
+
+                PengadaanAset.builder()
+                    .namaAset("Spidol Whiteboard")
+                    .kategoriAset(KategoriAset.BARANG_HABIS_PAKAI)
+                    .merk("Snowman")
+                    .qty(12)
+                    .estimasiHarga(120000L)
+                    .waktuPengadaan("2026-4-5")
+                    .linkGambar("https://example.com/spidol.jpg")
+                    .unit("SMP").build(),
+
+                PengadaanAset.builder()
+                    .namaAset("Laptop Core i7")
+                    .kategoriAset(KategoriAset.BARANG_HABIS_PAKAI)
+                    .merk("ASUS")
+                    .qty(2)
+                    .estimasiHarga(15000000L)
+                    .waktuPengadaan("2026-5-10")
+                    .linkGambar("https://example.com/laptop.jpg")
+                    .unit("SMA").build(),
+
+                PengadaanAset.builder()
+                    .namaAset("Kursi Lipat")
+                    .kategoriAset(KategoriAset.BARANG_HABIS_PAKAI)
+                    .merk("Chitose")
+                    .qty(20)
+                    .estimasiHarga(250000L)
+                    .waktuPengadaan("2026-4-20")
+                    .linkGambar("https://example.com/kursi.jpg")
+                    .unit("SD").build(),
+
+                PengadaanAset.builder()
+                    .namaAset("Proyektor Epson")
+                    .kategoriAset(KategoriAset.BARANG_HABIS_PAKAI)
+                    .merk("Epson EB-X400")
+                    .qty(1)
+                    .estimasiHarga(7000000L)
+                    .waktuPengadaan("2026-4-20")
+                    .linkGambar("https://example.com/proyektor.jpg")
+                    .unit("KB-TK").build()
+            );
+
+            pengadaanAsetRepository.saveAll(dummyAsets);
+            System.out.println(">>> 5 Dummy pengadaan aset seeded successfully!");
         }
     }
 
