@@ -11,6 +11,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -64,7 +65,7 @@ public class DataInitializer implements CommandLineRunner {
                     .merk("Sinar Dunia")
                     .qty(50)
                     .estimasiHarga(55000L)
-                    .waktuPengadaan("2026-4-1")
+                    .waktuPengadaan(LocalDate.of(2026, 4, 20))
                     .linkGambar("https://www.static-src.com/wcsstore/Indraprastha/images/catalog/full//catalog-image/96/MTA-144003649/brd-44261_kertas-double-folio-bergaris-sidu-1-lembar_full01-31f4f9a6.jpg")
                     .unit("SMA").build(),
 
@@ -74,7 +75,7 @@ public class DataInitializer implements CommandLineRunner {
                     .merk("Snowman")
                     .qty(12)
                     .estimasiHarga(120000L)
-                    .waktuPengadaan("2026-4-5")
+                    .waktuPengadaan(LocalDate.of(2026, 4, 20))
                     .linkGambar("https://example.com/spidol.jpg")
                     .unit("SMP").build(),
 
@@ -84,7 +85,7 @@ public class DataInitializer implements CommandLineRunner {
                     .merk("ASUS")
                     .qty(2)
                     .estimasiHarga(15000000L)
-                    .waktuPengadaan("2026-5-10")
+                    .waktuPengadaan(LocalDate.of(2026, 4, 20))
                     .linkGambar("https://example.com/laptop.jpg")
                     .unit("SMA").build(),
 
@@ -94,7 +95,7 @@ public class DataInitializer implements CommandLineRunner {
                     .merk("Chitose")
                     .qty(20)
                     .estimasiHarga(250000L)
-                    .waktuPengadaan("2026-4-20")
+                    .waktuPengadaan(LocalDate.of(2026, 4, 20))
                     .linkGambar("https://example.com/kursi.jpg")
                     .unit("SD").build(),
 
@@ -104,7 +105,7 @@ public class DataInitializer implements CommandLineRunner {
                     .merk("Epson EB-X400")
                     .qty(1)
                     .estimasiHarga(7000000L)
-                    .waktuPengadaan("2026-4-20")
+                    .waktuPengadaan(LocalDate.of(2026, 4, 20))
                     .linkGambar("https://example.com/proyektor.jpg")
                     .unit("KB-TK").build()
             );
