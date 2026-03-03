@@ -10,4 +10,5 @@ import java.util.List;
 public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UUID> {
     List<PengadaanAset> findByUserId(java.util.UUID userId);
     List<PengadaanAset> findByUnit(String unit);
+    List<PengadaanAset> findByUserId_Id(UUID userId);
 }

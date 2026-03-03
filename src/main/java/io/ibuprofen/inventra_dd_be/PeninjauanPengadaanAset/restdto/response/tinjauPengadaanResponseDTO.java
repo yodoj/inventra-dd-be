@@ -1,5 +1,6 @@
 package io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,7 +23,7 @@ public class tinjauPengadaanResponseDTO {
     private String merk;
     private int qty;
     private Long estimasiHarga;
-    private String waktuPengadaan;
+    private LocalDate waktuPengadaan;
     private String namaPengaju;
     private Status statusPengadaan;
 

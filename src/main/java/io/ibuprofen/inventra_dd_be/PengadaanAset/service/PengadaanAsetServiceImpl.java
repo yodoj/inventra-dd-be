@@ -2,6 +2,8 @@ package io.ibuprofen.inventra_dd_be.PengadaanAset.service;
 
 import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
+import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaanAsetRequestDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetResponse;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
@@ -20,6 +22,9 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     @Autowired
     private PengadaanAsetRepository pengadaanRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     public PengadaanAsetResponse createPengadaan(CreatePengadaanAsetRequestDTO request) {
         UserDetailsImpl userDetails = getCurrentUser();
@@ -37,8 +42,10 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setLinkGambar(request.getLinkGambar());
         
         pengadaan.setStatusPengadaan("DIAJUKAN");
-        pengadaan.setNamaPengaju(userDetails.getName()); 
-        pengadaan.setUserId(userDetails.getId()); 
+        pengadaan.setNamaPengaju(userDetails.getName());
+        User user = userRepository.findById(userDetails.getId())
+            .orElseThrow(() -> new IllegalStateException("User not found"));
+        pengadaan.setUserId(user);
 
         if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
             if (request.getUnit() == null || request.getUnit().isEmpty()) {
@@ -52,6 +59,8 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
             pengadaan.setUnit(userDetails.getUnit());
         }
 
+        pengadaan.setReviewPengajuan(null);
+        pengadaan.setWaktuPengajuan(java.time.LocalDateTime.now());
         PengadaanAset saved = pengadaanRepository.save(pengadaan);
         return mapToResponse(saved);
     }
@@ -59,8 +68,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     @Override
     public List<PengadaanAsetResponse> getAllPengadaan() {
         UserDetailsImpl userDetails = getCurrentUser();
-        
-        List<PengadaanAset> results = pengadaanRepository.findByUserId(userDetails.getId());
+        List<PengadaanAset> results = pengadaanRepository.findByUserId_Id(userDetails.getId());
 
         return results.stream()
                 .map(this::mapToResponse)

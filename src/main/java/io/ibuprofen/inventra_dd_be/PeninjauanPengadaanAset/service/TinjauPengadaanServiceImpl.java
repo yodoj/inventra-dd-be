@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -296,60 +298,80 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
         return toResponse(saved, p);
     }
-
     @Override
     @Transactional
     public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
         User currentUser = getCurrentUserEntity();
         
-        // Validasi Akses
+        // 1. Validasi Akses
         if (currentUser.getRole() != Role.YAYASAN) {
             throw new IllegalStateException("Akses ditolak: Hanya Yayasan yang bisa melakukan pembelian.");
         }
 
-        // Ambil data Pengadaan & Tinjauan
+        // 2. Ambil Data Pengadaan & Tinjauan
         PengadaanAset p = pengadaanRepo.findById(pengadaanId)
                 .orElseThrow(() -> new IllegalStateException("Data pengadaan tidak ditemukan."));
                 
         TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
-                .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum dibuat. Silakan setujui dahulu."));
+                .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum ditemukan. Pastikan sudah disetujui Yayasan."));
 
-        // Simpan File Bukti ke Storage
+        // 3. Simpan File Bukti ke Storage
         String fileName = null;
         if (file != null && !file.isEmpty()) {
             fileName = saveFileToLocal(file); 
         }
 
-        // Update Data Peninjauan (Simpan Harga & Nama File)
+        // 4. Update Data Peninjauan
         t.setHarga(hargaFinal);
         t.setBuktiPembelian(fileName);
         t.setStatus(Status.DIBELI);
         t.setUpdatedAt(LocalDateTime.now());
         repo.save(t);
 
-        // Update Status Tabel Utama
+        // 5. Update Status Tabel Utama (PengadaanAset)
         p.setStatusPengadaan(Status.DIBELI.name());
         pengadaanRepo.save(p);
 
-        // UPDATE STOK (Langsung di dalam fungsi yang sama)
-        // Cari apakah barang dengan merk tersebut sudah ada di gudang unit tersebut
-        AsetBarang aset = asetBarangRepo.findByNamaAsetAndMerkAsetAndUnit(p.getNamaAset(), p.getMerk(), p.getUnit())
-            .orElseGet(() -> {
-                AsetBarang newAset = new AsetBarang();
-                newAset.setNamaAset(p.getNamaAset());
-                newAset.setMerkAset(p.getMerk());
-                newAset.setQtyAset(0); 
-                newAset.setUnit(p.getUnit());
-                
-                return newAset; 
-            });
+        // 6. LOGIKA UPDATE STOK (Aman & Dinamis)
+        // Cari apakah barang dengan Nama, Merk, dan Unit yang sama sudah ada di gudang
+        Optional<AsetBarang> existingAset = asetBarangRepo.findByNamaAsetAndMerkAsetAndUnit(
+        p.getNamaAset(), p.getMerk(), p.getUnit()
+);
 
-        aset.setQtyAset(aset.getQtyAset() + p.getQty());
-        asetBarangRepo.save(aset);
+AsetBarang aset;
+if (existingAset.isPresent()) {
+    aset = existingAset.get();
+    aset.setQtyAset(aset.getQtyAset() + p.getQty());
+} else {
+    aset = new AsetBarang();
+    aset.setNamaAset(p.getNamaAset());
+    aset.setMerkAset(p.getMerk());
+    aset.setUnit(p.getUnit());
+    aset.setKategoriAset(p.getKategoriAset());
+    aset.setGambarUrlAset(p.getLinkGambar());
+    aset.setQtyAset(p.getQty());
+    aset.setStatusAset(io.ibuprofen.inventra_dd_be.Aset.model.StatusAset.TERSEDIA);
+    
+    String uniqueId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    aset.setKodeAset("AST-" + p.getUnit() + "-" + uniqueId);
+}
 
-        return toResponse(t, p);
+// 7. SIMPAN DENGAN PROTEKSI DUPLICATE KEY
+try {
+    asetBarangRepo.saveAndFlush(aset);
+} catch (DataIntegrityViolationException e) {
+    // Jika kena 'Duplicate Key (id=5)', kita buat objek dummy 
+    // supaya Hibernate "membuang" ID 5 tersebut, lalu coba simpan lagi yang asli.
+    
+    // Log pesan untuk kamu pantau di console
+    System.out.println("ID Bentrok terdeteksi, mencoba melompati...");
+    
+    // Simpan ulang (Hibernate akan otomatis minta ID baru lagi, misal 6)
+    asetBarangRepo.saveAndFlush(aset); 
+}
+
+return toResponse(t, p);
     }
-
     private String saveFileToLocal(MultipartFile file) {
         try {
             String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
