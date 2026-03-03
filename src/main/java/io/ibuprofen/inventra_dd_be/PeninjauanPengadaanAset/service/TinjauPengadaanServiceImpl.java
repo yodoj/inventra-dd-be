@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,9 @@ import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import io.ibuprofen.inventra_dd_be.Aset.model.AsetBarang;
+import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository;
+import io.ibuprofen.inventra_dd_be.Aset.service.AsetService;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +39,14 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
-  private final TinjauPengadaanRepository repo;
-  private final PengadaanAsetRepository pengadaanRepo;
-  private final UserRepository userRepository;
+    @Autowired
+    private AsetService asetService;
+    
+    private final TinjauPengadaanRepository repo;
+    private final PengadaanAsetRepository pengadaanRepo;
+    private final UserRepository userRepository;
+    private final AsetBarangRepository asetBarangRepository;
+  
 
     @Override
     public List<tinjauPengadaanResponseDTO> getAll() {
@@ -299,52 +307,81 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         return toResponse(saved, p);
     }
 
-    // @Override
-    // @Transactional
-    // public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
-    //     User currentUser = getCurrentUserEntity();
+    @Override
+    @Transactional
+    public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
+        User currentUser = getCurrentUserEntity();
         
-    //     // Validasi Akses
-    //     if (currentUser.getRole() != Role.YAYASAN) {
-    //         throw new IllegalStateException("Akses ditolak: Hanya Yayasan yang bisa melakukan pembelian.");
-    //     }
+        if (currentUser.getRole() != Role.YAYASAN) {
+            throw new IllegalStateException("Akses ditolak: Hanya Yayasan yang bisa melakukan pembelian.");
+        }
 
-    //     // Ambil data Pengadaan & Tinjauan
-    //     PengadaanAset p = pengadaanRepo.findById(pengadaanId)
-    //             .orElseThrow(() -> new IllegalStateException("Data pengadaan tidak ditemukan."));
+        PengadaanAset p = pengadaanRepo.findById(pengadaanId)
+                .orElseThrow(() -> new IllegalStateException("Data pengadaan tidak ditemukan."));
                 
-    //     TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
-    //             .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum dibuat. Silakan setujui dahulu."));
+        if (Status.DIBELI.name().equals(p.getStatusPengadaan())) {
+            TinjauPengadaan tExist = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
+                    .orElseThrow(() -> new IllegalStateException("Tinjauan tidak ditemukan."));
+            return toResponse(tExist, p);
+        }
 
-    //     // Simpan File Bukti ke Storage
-    //     String fileName = null;
-    //     if (file != null && !file.isEmpty()) {
-    //         fileName = saveFileToLocal(file); 
-    //     }
+        if (!"DISETUJUI_YAYASAN".equals(p.getStatusPengadaan())) {
+            throw new IllegalStateException("Gagal: Pembelian hanya dapat dilakukan untuk pengadaan yang sudah disetujui oleh Yayasan.");
+        }
 
-    //     // Update Data Peninjauan (Simpan Harga & Nama File)
-    //     t.setHarga(hargaFinal);
-    //     t.setBuktiPembelian(fileName);
-    //     t.setStatus(Status.DIBELI);
-    //     t.setUpdatedAt(LocalDateTime.now());
-    //     repo.save(t);
+        TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
+                .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum dibuat."));
 
-    //     p.setStatusPengadaan(Status.DIBELI.name());
-    //     pengadaanRepo.save(p);
-    //     return toResponse(t, p);
-    // }
+        String fileName = null;
+        if (file != null && !file.isEmpty()) {
+            fileName = saveFileToLocal(file); 
+        }
 
-    // private String saveFileToLocal(MultipartFile file) {
-    //     try {
-    //         String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-    //         Path root = Paths.get("uploads/bukti-pembelian");
-    //         if (!Files.exists(root)) Files.createDirectories(root);
-    //         Files.copy(file.getInputStream(), root.resolve(filename));
-    //         return filename;
-    //     } catch (IOException e) {
-    //         throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
-    //     }
-    // }
+        t.setHarga(hargaFinal);
+        t.setBuktiPembelian(fileName);
+        t.setStatus(Status.DIBELI);
+        t.setUpdatedAt(LocalDateTime.now());
+        repo.save(t);
+
+        p.setStatusPengadaan(Status.DIBELI.name());
+        pengadaanRepo.save(p);
+
+        createAsetFromPurchase(p);
+
+        return toResponse(t, p);
+    }
+
+    private void createAsetFromPurchase(PengadaanAset p) {
+        AsetBarang asetBarang = new AsetBarang();
+        
+        String kodeBaru = generateKodeAset("B"); 
+        asetBarang.setKodeAset(kodeBaru);
+        
+        asetBarang.setNamaAset(p.getNamaAset());
+        asetBarang.setGambarUrlAset(p.getLinkGambar());
+        asetBarang.setKategoriAset(p.getKategoriAset());
+        asetBarang.setUnit(p.getUnit());
+        asetBarang.setKeteranganAset("Aset tambahan dari pengajuan");
+        
+        asetBarang.setMerkAset(p.getMerk());
+        asetBarang.setQtyAset(p.getQty());
+        asetBarang.setLokasiAset("Belum Ditentukan");
+        asetBarang.setStatusAset(StatusAset.TERSEDIA);
+
+        asetBarangRepository.save(asetBarang);
+    }
+
+    private String saveFileToLocal(MultipartFile file) {
+        try {
+            String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path root = Paths.get("uploads/bukti-pembelian");
+            if (!Files.exists(root)) Files.createDirectories(root);
+            Files.copy(file.getInputStream(), root.resolve(filename));
+            return filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
+        }
+    }
 
 
     private tinjauPengadaanResponseDTO toResponse(TinjauPengadaan t, PengadaanAset p) {
@@ -393,4 +430,17 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
     return userRepository.findById(principal.getId())
         .orElseThrow(() -> new IllegalStateException("User tidak ditemukan"));
   }
+
+    private String generateKodeAset(String prefix) {
+        Integer maxNum = 0;
+        try {
+            if (prefix.equals("B")) {
+                maxNum = asetBarangRepository.findMaxNumericCode();
+            }
+        } catch (Exception e) {
+        }
+
+        int nextNum = (maxNum != null ? maxNum : 0) + 1;
+        return String.format("%s%05d", prefix, nextNum);
+    }
 }
