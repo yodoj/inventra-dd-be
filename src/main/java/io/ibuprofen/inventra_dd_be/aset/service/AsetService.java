@@ -1,5 +1,7 @@
 package io.ibuprofen.inventra_dd_be.Aset.service;
 
+import java.util.UUID;
+
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.CreateAsetBarangRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.CreateAsetRuanganRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.UpdateAsetBarangRequestDTO;
@@ -20,15 +22,15 @@ public interface AsetService {
 
         AsetRuanganResponseDTO createAsetRuangan(CreateAsetRuanganRequestDTO request);
 
-        AsetBarangResponseDTO updateAsetBarang(Long id, UpdateAsetBarangRequestDTO request);
+        AsetBarangResponseDTO updateAsetBarang(UUID id, UpdateAsetBarangRequestDTO request);
 
-        AsetRuanganResponseDTO updateAsetRuangan(Long id, UpdateAsetRuanganRequestDTO request);
+        AsetRuanganResponseDTO updateAsetRuangan(UUID id, UpdateAsetRuanganRequestDTO request);
 
-        AsetBarangResponseDTO getAsetBarangById(Long id);
+        AsetBarangResponseDTO getAsetBarangById(UUID id);
 
-        AsetRuanganResponseDTO getAsetRuanganById(Long id);
+        AsetRuanganResponseDTO getAsetRuanganById(UUID id);
 
-        void deleteAsetBarang(Long id);
+        void deleteAsetBarang(UUID id);
 
-        void deleteAsetRuangan(Long id);
+        void deleteAsetRuangan(UUID id);
 }
