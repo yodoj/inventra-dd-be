@@ -6,8 +6,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +39,6 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
   private final TinjauPengadaanRepository repo;
   private final PengadaanAsetRepository pengadaanRepo;
   private final UserRepository userRepository;
-  private final AsetBarangRepository asetBarangRepo;
 
     @Override
     public List<tinjauPengadaanResponseDTO> getAll() {
@@ -298,91 +295,53 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
         return toResponse(saved, p);
     }
-    @Override
-    @Transactional
-    public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
-        User currentUser = getCurrentUserEntity();
+
+    // @Override
+    // @Transactional
+    // public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
+    //     User currentUser = getCurrentUserEntity();
         
-        // 1. Validasi Akses
-        if (currentUser.getRole() != Role.YAYASAN) {
-            throw new IllegalStateException("Akses ditolak: Hanya Yayasan yang bisa melakukan pembelian.");
-        }
+    //     // Validasi Akses
+    //     if (currentUser.getRole() != Role.YAYASAN) {
+    //         throw new IllegalStateException("Akses ditolak: Hanya Yayasan yang bisa melakukan pembelian.");
+    //     }
 
-        // 2. Ambil Data Pengadaan & Tinjauan
-        PengadaanAset p = pengadaanRepo.findById(pengadaanId)
-                .orElseThrow(() -> new IllegalStateException("Data pengadaan tidak ditemukan."));
+    //     // Ambil data Pengadaan & Tinjauan
+    //     PengadaanAset p = pengadaanRepo.findById(pengadaanId)
+    //             .orElseThrow(() -> new IllegalStateException("Data pengadaan tidak ditemukan."));
                 
-        TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
-                .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum ditemukan. Pastikan sudah disetujui Yayasan."));
+    //     TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
+    //             .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum dibuat. Silakan setujui dahulu."));
 
-        // 3. Simpan File Bukti ke Storage
-        String fileName = null;
-        if (file != null && !file.isEmpty()) {
-            fileName = saveFileToLocal(file); 
-        }
+    //     // Simpan File Bukti ke Storage
+    //     String fileName = null;
+    //     if (file != null && !file.isEmpty()) {
+    //         fileName = saveFileToLocal(file); 
+    //     }
 
-        // 4. Update Data Peninjauan
-        t.setHarga(hargaFinal);
-        t.setBuktiPembelian(fileName);
-        t.setStatus(Status.DIBELI);
-        t.setUpdatedAt(LocalDateTime.now());
-        repo.save(t);
+    //     // Update Data Peninjauan (Simpan Harga & Nama File)
+    //     t.setHarga(hargaFinal);
+    //     t.setBuktiPembelian(fileName);
+    //     t.setStatus(Status.DIBELI);
+    //     t.setUpdatedAt(LocalDateTime.now());
+    //     repo.save(t);
 
-        // 5. Update Status Tabel Utama (PengadaanAset)
-        p.setStatusPengadaan(Status.DIBELI.name());
-        pengadaanRepo.save(p);
+    //     p.setStatusPengadaan(Status.DIBELI.name());
+    //     pengadaanRepo.save(p);
+    //     return toResponse(t, p);
+    // }
 
-        // 6. LOGIKA UPDATE STOK (Aman & Dinamis)
-        // Cari apakah barang dengan Nama, Merk, dan Unit yang sama sudah ada di gudang
-        Optional<AsetBarang> existingAset = asetBarangRepo.findByNamaAsetAndMerkAsetAndUnit(
-        p.getNamaAset(), p.getMerk(), p.getUnit()
-);
-
-AsetBarang aset;
-if (existingAset.isPresent()) {
-    aset = existingAset.get();
-    aset.setQtyAset(aset.getQtyAset() + p.getQty());
-} else {
-    aset = new AsetBarang();
-    aset.setNamaAset(p.getNamaAset());
-    aset.setMerkAset(p.getMerk());
-    aset.setUnit(p.getUnit());
-    aset.setKategoriAset(p.getKategoriAset());
-    aset.setGambarUrlAset(p.getLinkGambar());
-    aset.setQtyAset(p.getQty());
-    aset.setStatusAset(io.ibuprofen.inventra_dd_be.Aset.model.StatusAset.TERSEDIA);
-    
-    String uniqueId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    aset.setKodeAset("AST-" + p.getUnit() + "-" + uniqueId);
-}
-
-// 7. SIMPAN DENGAN PROTEKSI DUPLICATE KEY
-try {
-    asetBarangRepo.saveAndFlush(aset);
-} catch (DataIntegrityViolationException e) {
-    // Jika kena 'Duplicate Key (id=5)', kita buat objek dummy 
-    // supaya Hibernate "membuang" ID 5 tersebut, lalu coba simpan lagi yang asli.
-    
-    // Log pesan untuk kamu pantau di console
-    System.out.println("ID Bentrok terdeteksi, mencoba melompati...");
-    
-    // Simpan ulang (Hibernate akan otomatis minta ID baru lagi, misal 6)
-    asetBarangRepo.saveAndFlush(aset); 
-}
-
-return toResponse(t, p);
-    }
-    private String saveFileToLocal(MultipartFile file) {
-        try {
-            String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path root = Paths.get("uploads/bukti-pembelian");
-            if (!Files.exists(root)) Files.createDirectories(root);
-            Files.copy(file.getInputStream(), root.resolve(filename));
-            return filename;
-        } catch (IOException e) {
-            throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
-        }
-    }
+    // private String saveFileToLocal(MultipartFile file) {
+    //     try {
+    //         String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+    //         Path root = Paths.get("uploads/bukti-pembelian");
+    //         if (!Files.exists(root)) Files.createDirectories(root);
+    //         Files.copy(file.getInputStream(), root.resolve(filename));
+    //         return filename;
+    //     } catch (IOException e) {
+    //         throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
+    //     }
+    // }
 
 
     private tinjauPengadaanResponseDTO toResponse(TinjauPengadaan t, PengadaanAset p) {

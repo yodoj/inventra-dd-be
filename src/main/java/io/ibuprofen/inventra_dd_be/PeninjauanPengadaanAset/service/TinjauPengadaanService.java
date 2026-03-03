@@ -13,5 +13,5 @@ public interface TinjauPengadaanService {
   tinjauPengadaanResponseDTO create(UUID pengadaanId, tinjauPengadaanRequestDTO req);
   tinjauPengadaanResponseDTO update(UUID pengadaanId, tinjauPengadaanRequestDTO req);
   tinjauPengadaanResponseDTO getByPengadaanId(UUID pengadaanId);
-  tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file);
+  // tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file);
 }

@@ -59,13 +59,13 @@ public class TinjauPengadaanController {
     return BaseResponseDTO.ok(result, "Peninjauan berhasil diperbarui");
   }
 
-  @PostMapping(value = "/bukti/{pengadaanId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<?> beli(
-          @PathVariable UUID pengadaanId,
-          @RequestParam("harga") Long harga,
-          @RequestParam("buktiPembelian") MultipartFile file) {
-      return ResponseEntity.ok(tinjauService.beli(pengadaanId, harga, file));
-  }
+  // @PostMapping(value = "/bukti/{pengadaanId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  // public ResponseEntity<?> beli(
+  //         @PathVariable UUID pengadaanId,
+  //         @RequestParam("harga") Long harga,
+  //         @RequestParam("buktiPembelian") MultipartFile file) {
+  //     return ResponseEntity.ok(tinjauService.beli(pengadaanId, harga, file));
+  // }
 
   
 }
