@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -154,7 +155,7 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
-    public AsetBarangResponseDTO updateAsetBarang(Long id, UpdateAsetBarangRequestDTO request) {
+    public AsetBarangResponseDTO updateAsetBarang(UUID id, UpdateAsetBarangRequestDTO request) {
         UserDetailsImpl userDetails = getCurrentUser();
         Set<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
@@ -203,7 +204,7 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
-    public AsetRuanganResponseDTO updateAsetRuangan(Long id, UpdateAsetRuanganRequestDTO request) {
+    public AsetRuanganResponseDTO updateAsetRuangan(UUID id, UpdateAsetRuanganRequestDTO request) {
         UserDetailsImpl userDetails = getCurrentUser();
         Set<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
@@ -249,7 +250,7 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
-    public AsetBarangResponseDTO getAsetBarangById(Long id) {
+    public AsetBarangResponseDTO getAsetBarangById(UUID id) {
         AsetBarang asetBarang = asetBarangRepository.findById(id)
                 .orElseThrow(
                         () -> new java.util.NoSuchElementException("Aset barang dengan ID " + id + " tidak ditemukan"));
@@ -257,7 +258,7 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
-    public AsetRuanganResponseDTO getAsetRuanganById(Long id) {
+    public AsetRuanganResponseDTO getAsetRuanganById(UUID id) {
         AsetRuangan asetRuangan = asetRuanganRepository.findById(id)
                 .orElseThrow(() -> new java.util.NoSuchElementException(
                         "Aset ruangan dengan ID " + id + " tidak ditemukan"));
@@ -265,7 +266,7 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
-    public void deleteAsetBarang(Long id) {
+    public void deleteAsetBarang(UUID id) {
         UserDetailsImpl userDetails = getCurrentUser();
         Set<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
@@ -288,7 +289,7 @@ public class AsetServiceImpl implements AsetService {
     }
 
     @Override
-    public void deleteAsetRuangan(Long id) {
+    public void deleteAsetRuangan(UUID id) {
         UserDetailsImpl userDetails = getCurrentUser();
         Set<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())

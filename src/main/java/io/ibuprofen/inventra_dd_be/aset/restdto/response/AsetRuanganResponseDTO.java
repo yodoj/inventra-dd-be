@@ -8,13 +8,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AsetRuanganResponseDTO {
     @JsonProperty("id_aset")
-    private Long idAset;
+    private UUID idAset;
 
     @JsonProperty("kode_aset")
     private String kodeAset;
