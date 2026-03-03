@@ -49,4 +49,7 @@ public class PengadaanAsetResponse {
 
     @JsonProperty("status_pengadaan")
     private String statusPengadaan;
+
+    @JsonProperty("review_penagajuan")
+    private String reviewPengajuan;
 }

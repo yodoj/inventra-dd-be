@@ -5,6 +5,8 @@ import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import jakarta.persistence.*;
 
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,6 +23,7 @@ public class PengadaanAset {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id_pengadaan")
     private UUID idPengadaan; 
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,7 +49,7 @@ public class PengadaanAset {
     @Column(name = "waktu_pengadaan", nullable = false)
     private LocalDate waktuPengadaan; 
 
-    @Column(name = "link_gambar", columnDefinition = "TEXT")
+    @Column(name = "link_gambar", columnDefinition = "TEXT", nullable =  false)
     private String linkGambar;
 
     @Column(name = "status_pengadaan", nullable = false)
@@ -54,6 +57,9 @@ public class PengadaanAset {
 
     @Column(name = "unit", columnDefinition = "VARCHAR(255)")
     private String unit; 
+
+    @Column(nullable = false)
+    private String namaPengaju; 
 
     @Column(name = "review_pengajuan", columnDefinition = "TEXT")
     private String reviewPengajuan;
