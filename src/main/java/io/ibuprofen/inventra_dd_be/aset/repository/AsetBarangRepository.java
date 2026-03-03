@@ -18,12 +18,12 @@ public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
                         "(:unit IS NULL OR a.unit = :unit) AND " +
                         "(:kategori IS NULL OR a.kategori_aset = :kategori) AND " +
                         "(:status IS NULL OR a.status_aset = :status) AND " +
-                        "(:search IS NULL OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%'))", countQuery = "SELECT count(*) FROM aset_barang ab JOIN aset a ON ab.id_aset = a.id_aset WHERE "
+                        "(:search IS NULL OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%') OR ab.merk_aset ILIKE CONCAT('%', :search, '%'))", countQuery = "SELECT count(*) FROM aset_barang ab JOIN aset a ON ab.id_aset = a.id_aset WHERE "
                                         +
                                         "(:unit IS NULL OR a.unit = :unit) AND " +
                                         "(:kategori IS NULL OR a.kategori_aset = :kategori) AND " +
                                         "(:status IS NULL OR a.status_aset = :status) AND " +
-                                        "(:search IS NULL OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%'))", nativeQuery = true)
+                                        "(:search IS NULL OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%') OR ab.merk_aset ILIKE CONCAT('%', :search, '%'))", nativeQuery = true)
         Page<AsetBarang> findWithFilters(
                         @Param("unit") String unit,
                         @Param("kategori") String kategori,

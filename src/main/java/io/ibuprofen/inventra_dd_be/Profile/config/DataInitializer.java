@@ -25,13 +25,15 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.count() == 0) {
 
             // 1. Superadmin
-            createUser("Superadmin", "superadmin@diandidaktika.sch.id", "admin123", Role.ADMIN, "Global", null, null);
+            createUser("Superadmin", "superadmin@diandidaktika.sch.id", "admin123", Role.ADMIN, "superadmin", null,
+                    null);
 
             // 2. Yayasan
-            createUser("Ketua Yayasan", "yayasan@diandidaktika.sch.id", "yayasan123", Role.YAYASAN, "Pusat", null, null);
+            createUser("Ketua Yayasan", "yayasan@diandidaktika.sch.id", "yayasan123", Role.YAYASAN, "yayasan", null,
+                    null);
 
-            // 3. Per Unit (TK, SD, SMP, SMA)
-            List<String> units = Arrays.asList("TK", "SD", "SMP", "SMA");
+            // 3. Per Unit (KB-TK, SD, SMP, SMA)
+            List<String> units = Arrays.asList("KB-TK", "SD", "SMP", "SMA");
 
             for (String unit : units) {
                 String unitLower = unit.toLowerCase();

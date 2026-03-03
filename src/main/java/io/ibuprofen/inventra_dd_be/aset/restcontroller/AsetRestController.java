@@ -1,5 +1,6 @@
 package io.ibuprofen.inventra_dd_be.Aset.restcontroller;
 
+import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.CreateAsetBarangRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.CreateAsetRuanganRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.UpdateAsetBarangRequestDTO;
@@ -25,6 +26,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -47,6 +50,23 @@ public class AsetRestController {
             return ResponseEntity.badRequest()
                     .body(BaseResponseDTO.error(400, "Error: Parameter page atau size tidak valid"));
         }
+
+        if (unit != null && !unit.isEmpty() && !isValidUnit(unit)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400,
+                            "Error: Parameter unit tidak valid. Harus salah satu dari (KB-TK, SD, SMP, SMA)"));
+        }
+
+        if (kategori != null && !kategori.isEmpty() && !isValidKategoriBarang(kategori)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter kategori barang tidak valid"));
+        }
+
+        if (status != null && !status.isEmpty() && !isValidStatus(status)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter status aset tidak valid"));
+        }
+
         Pageable pageable = PageRequest.of(page, size);
         Page<AsetBarangResponseDTO> result = asetService.getAsetBarang(unit, kategori, status, search, pageable);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset barang retrieved successfully"));
@@ -65,6 +85,23 @@ public class AsetRestController {
             return ResponseEntity.badRequest()
                     .body(BaseResponseDTO.error(400, "Error: Parameter page atau size tidak valid"));
         }
+
+        if (unit != null && !unit.isEmpty() && !isValidUnit(unit)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400,
+                            "Error: Parameter unit tidak valid. Harus salah satu dari (KB-TK, SD, SMP, SMA)"));
+        }
+
+        if (kategori != null && !kategori.isEmpty() && !isValidKategoriRuangan(kategori)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter kategori ruangan tidak valid"));
+        }
+
+        if (status != null && !status.isEmpty() && !isValidStatus(status)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter status aset tidak valid"));
+        }
+
         Pageable pageable = PageRequest.of(page, size);
         Page<AsetRuanganResponseDTO> result = asetService.getAsetRuangan(unit, kategori, status, search, pageable);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset ruangan retrieved successfully"));
@@ -127,5 +164,27 @@ public class AsetRestController {
     public ResponseEntity<?> deleteAsetRuangan(@PathVariable UUID id) {
         asetService.deleteAsetRuangan(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset ruangan deleted successfully"));
+    }
+
+    private boolean isValidUnit(String unit) {
+        List<String> validUnits = Arrays.asList("KB-TK", "SD", "SMP", "SMA");
+        return validUnits.contains(unit);
+    }
+
+    private boolean isValidStatus(String status) {
+        try {
+            StatusAset.valueOf(status);
+            return true;
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return false;
+        }
+    }
+
+    private boolean isValidKategoriBarang(String kategori) {
+        return kategori.equals("BARANG_HABIS_PAKAI") || kategori.equals("BARANG_TIDAK_HABIS_PAKAI");
+    }
+
+    private boolean isValidKategoriRuangan(String kategori) {
+        return kategori.equals("RUANG_KELAS") || kategori.equals("RUANG_NON_KELAS");
     }
 }
