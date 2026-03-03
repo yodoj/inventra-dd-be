@@ -60,6 +60,7 @@ public class TinjauPengadaanController {
   }
 
   @PostMapping(value = "/bukti/{pengadaanId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAnyAuthority('YAYASAN','ADMIN')")
   public BaseResponseDTO<tinjauPengadaanResponseDTO> beli(
           @PathVariable UUID pengadaanId,
           @RequestParam("harga") Long harga,

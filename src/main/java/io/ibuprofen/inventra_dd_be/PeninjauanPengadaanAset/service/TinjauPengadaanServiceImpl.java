@@ -60,10 +60,14 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         // Filter data berdasarkan Role
         if (role == Role.YAYASAN) {
             // Yayasan bisa melihat semua data dari semua unit
-            pengadaanList = pengadaanRepo.findAll();
+            pengadaanList = pengadaanRepo.findAll().stream()
+                .filter(p -> !"DIBELI".equals(p.getStatusPengadaan()))
+                .collect(Collectors.toList());
         } else if (role == Role.KEPSEK) {
             // Kepsek hanya bisa melihat data yang unit pengadaannya sama dengan unit dirinya
-            pengadaanList = pengadaanRepo.findByUnit(unitUser); 
+            pengadaanList = pengadaanRepo.findByUnit(unitUser).stream()
+                .filter(p -> !"DIBELI".equals(p.getStatusPengadaan()))
+                .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
