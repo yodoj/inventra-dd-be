@@ -35,4 +35,6 @@ public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
         Integer findMaxNumericCode();
 
         Optional<AsetBarang> findTopByOrderByKodeAsetDesc();
+
+        Optional<AsetBarang> findByNamaAsetAndMerkAsetAndUnit(String namaAset, String merk, String unit);
 }
