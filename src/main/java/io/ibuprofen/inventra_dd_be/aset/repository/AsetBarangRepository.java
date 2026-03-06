@@ -7,15 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
-import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
-import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 
 @Repository
-public interface AsetBarangRepository extends JpaRepository<AsetBarang, Long> {
+public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
         @Query(value = "SELECT ab.*, a.* FROM aset_barang ab JOIN aset a ON ab.id_aset = a.id_aset WHERE " +
                         "(:unit IS NULL OR a.unit = :unit) AND " +
                         "(:kategori IS NULL OR a.kategori_aset = :kategori) AND " +

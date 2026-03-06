@@ -6,8 +6,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +27,9 @@ import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import io.ibuprofen.inventra_dd_be.Aset.model.AsetBarang;
+import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository;
+import io.ibuprofen.inventra_dd_be.Aset.service.AsetService;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,14 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
-  private final TinjauPengadaanRepository repo;
-  private final PengadaanAsetRepository pengadaanRepo;
-  private final UserRepository userRepository;
-  private final AsetBarangRepository asetBarangRepo;
+    @Autowired
+    private AsetService asetService;
+    
+    private final TinjauPengadaanRepository repo;
+    private final PengadaanAsetRepository pengadaanRepo;
+    private final UserRepository userRepository;
+    private final AsetBarangRepository asetBarangRepository;
+  
 
     @Override
     public List<tinjauPengadaanResponseDTO> getAll() {
@@ -55,10 +60,14 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         // Filter data berdasarkan Role
         if (role == Role.YAYASAN) {
             // Yayasan bisa melihat semua data dari semua unit
-            pengadaanList = pengadaanRepo.findAll();
+            pengadaanList = pengadaanRepo.findAll().stream()
+                .filter(p -> !"DIBELI".equals(p.getStatusPengadaan()))
+                .collect(Collectors.toList());
         } else if (role == Role.KEPSEK) {
             // Kepsek hanya bisa melihat data yang unit pengadaannya sama dengan unit dirinya
-            pengadaanList = pengadaanRepo.findByUnit(unitUser); 
+            pengadaanList = pengadaanRepo.findByUnit(unitUser).stream()
+                .filter(p -> !"DIBELI".equals(p.getStatusPengadaan()))
+                .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
@@ -106,6 +115,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
                 .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
                 .merk(p.getMerk())
                 .qty(p.getQty())
+                .unit(p.getUnit())
                 .namaPengaju(p.getNamaPengaju())
                 .estimasiHarga(p.getEstimasiHarga())
                 .waktuPengadaan(p.getWaktuPengadaan())
@@ -154,6 +164,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
         .merk(p.getMerk())
         .qty(p.getQty())
+        .unit(p.getUnit())
         .estimasiHarga(p.getEstimasiHarga())
         .waktuPengadaan(p.getWaktuPengadaan())
         .namaPengaju(p.getNamaPengaju())
@@ -223,11 +234,13 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         LocalDateTime now = LocalDateTime.now();
         if (role == Role.KEPSEK) t.setKepsekFirstReviewedAt(now);
         else if (role == Role.YAYASAN) t.setYayasanFirstReviewedAt(now);
+        t.setCreatedAt(now);
 
         TinjauPengadaan saved = repo.save(t);
         
         // UPDATE status di tabel utama (PengadaanAset)
         p.setStatusPengadaan(req.getStatusPengadaan().name());
+        p.setReviewPengajuan(req.getAlasan() == null || req.getAlasan().isBlank() ? "-" : req.getAlasan());
         pengadaanRepo.save(p);
 
         return toResponse(saved, p);
@@ -294,84 +307,76 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
         TinjauPengadaan saved = repo.save(t);
         p.setStatusPengadaan(req.getStatusPengadaan().name());
+        p.setReviewPengajuan(req.getAlasan() == null || req.getAlasan().isBlank() ? "-" : req.getAlasan());
         pengadaanRepo.save(p);
 
         return toResponse(saved, p);
     }
+
     @Override
     @Transactional
     public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
         User currentUser = getCurrentUserEntity();
         
-        // 1. Validasi Akses
         if (currentUser.getRole() != Role.YAYASAN) {
             throw new IllegalStateException("Akses ditolak: Hanya Yayasan yang bisa melakukan pembelian.");
         }
 
-        // 2. Ambil Data Pengadaan & Tinjauan
         PengadaanAset p = pengadaanRepo.findById(pengadaanId)
                 .orElseThrow(() -> new IllegalStateException("Data pengadaan tidak ditemukan."));
                 
-        TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
-                .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum ditemukan. Pastikan sudah disetujui Yayasan."));
+        if (Status.DIBELI.name().equals(p.getStatusPengadaan())) {
+            TinjauPengadaan tExist = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
+                    .orElseThrow(() -> new IllegalStateException("Tinjauan tidak ditemukan."));
+            return toResponse(tExist, p);
+        }
 
-        // 3. Simpan File Bukti ke Storage
+        if (!"DISETUJUI_YAYASAN".equals(p.getStatusPengadaan())) {
+            throw new IllegalStateException("Gagal: Pembelian hanya dapat dilakukan untuk pengadaan yang sudah disetujui oleh Yayasan.");
+        }
+
+        TinjauPengadaan t = repo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(pengadaanId, Role.YAYASAN)
+                .orElseThrow(() -> new IllegalStateException("Tinjauan Yayasan belum dibuat."));
+
         String fileName = null;
         if (file != null && !file.isEmpty()) {
             fileName = saveFileToLocal(file); 
         }
 
-        // 4. Update Data Peninjauan
         t.setHarga(hargaFinal);
         t.setBuktiPembelian(fileName);
         t.setStatus(Status.DIBELI);
         t.setUpdatedAt(LocalDateTime.now());
         repo.save(t);
 
-        // 5. Update Status Tabel Utama (PengadaanAset)
         p.setStatusPengadaan(Status.DIBELI.name());
         pengadaanRepo.save(p);
 
-        // 6. LOGIKA UPDATE STOK (Aman & Dinamis)
-        // Cari apakah barang dengan Nama, Merk, dan Unit yang sama sudah ada di gudang
-        Optional<AsetBarang> existingAset = asetBarangRepo.findByNamaAsetAndMerkAsetAndUnit(
-        p.getNamaAset(), p.getMerk(), p.getUnit()
-);
+        createAsetFromPurchase(p);
 
-AsetBarang aset;
-if (existingAset.isPresent()) {
-    aset = existingAset.get();
-    aset.setQtyAset(aset.getQtyAset() + p.getQty());
-} else {
-    aset = new AsetBarang();
-    aset.setNamaAset(p.getNamaAset());
-    aset.setMerkAset(p.getMerk());
-    aset.setUnit(p.getUnit());
-    aset.setKategoriAset(p.getKategoriAset());
-    aset.setGambarUrlAset(p.getLinkGambar());
-    aset.setQtyAset(p.getQty());
-    aset.setStatusAset(io.ibuprofen.inventra_dd_be.Aset.model.StatusAset.TERSEDIA);
-    
-    String uniqueId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    aset.setKodeAset("AST-" + p.getUnit() + "-" + uniqueId);
-}
-
-// 7. SIMPAN DENGAN PROTEKSI DUPLICATE KEY
-try {
-    asetBarangRepo.saveAndFlush(aset);
-} catch (DataIntegrityViolationException e) {
-    // Jika kena 'Duplicate Key (id=5)', kita buat objek dummy 
-    // supaya Hibernate "membuang" ID 5 tersebut, lalu coba simpan lagi yang asli.
-    
-    // Log pesan untuk kamu pantau di console
-    System.out.println("ID Bentrok terdeteksi, mencoba melompati...");
-    
-    // Simpan ulang (Hibernate akan otomatis minta ID baru lagi, misal 6)
-    asetBarangRepo.saveAndFlush(aset); 
-}
-
-return toResponse(t, p);
+        return toResponse(t, p);
     }
+
+    private void createAsetFromPurchase(PengadaanAset p) {
+        AsetBarang asetBarang = new AsetBarang();
+        
+        String kodeBaru = generateKodeAset("B"); 
+        asetBarang.setKodeAset(kodeBaru);
+        
+        asetBarang.setNamaAset(p.getNamaAset());
+        asetBarang.setGambarUrlAset(p.getLinkGambar());
+        asetBarang.setKategoriAset(p.getKategoriAset());
+        asetBarang.setUnit(p.getUnit());
+        asetBarang.setKeteranganAset("Aset tambahan dari pengajuan");
+        
+        asetBarang.setMerkAset(p.getMerk());
+        asetBarang.setQtyAset(p.getQty());
+        asetBarang.setLokasiAset("Belum Ditentukan");
+        asetBarang.setStatusAset(StatusAset.TERSEDIA);
+
+        asetBarangRepository.save(asetBarang);
+    }
+
     private String saveFileToLocal(MultipartFile file) {
         try {
             String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
@@ -395,10 +400,12 @@ return toResponse(t, p);
         .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
         .merk(p.getMerk())
         .qty(p.getQty())
+        .unit(p.getUnit())
         .estimasiHarga(p.getEstimasiHarga())
         .waktuPengadaan(p.getWaktuPengadaan())
         .statusPengadaan(t.getStatus())
         .alasan(t.getAlasan())
+        .createdAt(t.getCreatedAt())
         .kepsekFirstReviewedAt(t.getKepsekFirstReviewedAt())
         .yayasanFirstReviewedAt(t.getYayasanFirstReviewedAt())
         .updatedAt(t.getUpdatedAt())
@@ -430,4 +437,17 @@ return toResponse(t, p);
     return userRepository.findById(principal.getId())
         .orElseThrow(() -> new IllegalStateException("User tidak ditemukan"));
   }
+
+    private String generateKodeAset(String prefix) {
+        Integer maxNum = 0;
+        try {
+            if (prefix.equals("B")) {
+                maxNum = asetBarangRepository.findMaxNumericCode();
+            }
+        } catch (Exception e) {
+        }
+
+        int nextNum = (maxNum != null ? maxNum : 0) + 1;
+        return String.format("%s%05d", prefix, nextNum);
+    }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -40,7 +41,7 @@ public class CreatePengadaanAsetRequestDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @FutureOrPresent(message = "Tanggal pengadaan tidak boleh hari ini atau lampau")
     private LocalDate waktuPengadaan;
-
+    
     @NotBlank(message = "Link gambar tidak boleh kosong") 
     private String linkGambar;
 
