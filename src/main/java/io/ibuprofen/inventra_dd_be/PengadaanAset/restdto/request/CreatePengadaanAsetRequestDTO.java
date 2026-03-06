@@ -1,7 +1,6 @@
 package io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request;
 
 import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;

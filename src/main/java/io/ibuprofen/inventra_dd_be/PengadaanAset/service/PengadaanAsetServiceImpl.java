@@ -5,8 +5,13 @@ import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetReposit
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaanAsetRequestDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetDetailResponse;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetResponse;
+import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.TinjauPengadaan;
+import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.repository.TinjauPengadaanRepository;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,8 +31,11 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TinjauPengadaanRepository tinjauRepo;
+
     @Override
-    public PengadaanAsetResponse createPengadaan(CreatePengadaanAsetRequestDTO request) {
+    public PengadaanAsetDetailResponse createPengadaan(CreatePengadaanAsetRequestDTO request) {
         UserDetailsImpl userDetails = getCurrentUser();
         Set<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
@@ -62,7 +71,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setReviewPengajuan(null);
         pengadaan.setWaktuPengajuan(java.time.LocalDateTime.now());
         PengadaanAset saved = pengadaanRepository.save(pengadaan);
-        return mapToResponse(saved);
+        return mapToDetailResponse(saved);
     }
 
     @Override
@@ -73,6 +82,48 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         return results.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PengadaanAsetDetailResponse getPengadaanById(UUID id) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        PengadaanAset pengadaan = pengadaanRepository.findById(id)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Pengajuan pengadaan tidak ditemukan"));
+
+        if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses ke data ini");
+        }
+        if (!pengadaan.getUnit().equals(userDetails.getUnit())) {
+            throw new IllegalStateException("Unit tidak sesuai");
+        }
+
+        return mapToDetailResponse(pengadaan);
+    }
+
+    @Override
+    @Transactional
+    public void deletePengadaan(UUID id) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        PengadaanAset pengadaan = pengadaanRepository.findById(id)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Pengajuan pengadaan tidak ditemukan"));
+
+        if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Hanya pemilik yang dapat menghapus");
+        }
+
+        String status = pengadaan.getStatusPengadaan();
+        if (!status.equals("DIAJUKAN") && !status.equals("DITOLAK")) {
+            throw new IllegalStateException("Pengajuan tidak dapat dihapus karena status sudah " + status);
+        }
+
+        if (status.equals("DITOLAK")) {
+            List<TinjauPengadaan> relatedReviews = tinjauRepo.findByPengadaan_IdPengadaanIn(List.of(id)); 
+            if (!relatedReviews.isEmpty()) {
+                tinjauRepo.deleteAll(relatedReviews); 
+            }
+        }
+
+        pengadaanRepository.delete(pengadaan);
     }
 
     private UserDetailsImpl getCurrentUser() {
@@ -93,6 +144,33 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                 .kategori(p.getKategoriAset())
                 .linkGambar(p.getLinkGambar())
                 .statusPengadaan(p.getStatusPengadaan())
+                .build();
+    }
+
+    private PengadaanAsetDetailResponse mapToDetailResponse(PengadaanAset p) {
+        String alasan = null;
+        if (!"DIAJUKAN".equals(p.getStatusPengadaan())) {
+            var tinjauan = tinjauRepo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(p.getIdPengadaan(), io.ibuprofen.inventra_dd_be.Profile.model.Role.YAYASAN)
+                    .or(() -> tinjauRepo.findFirstByPengadaan_IdPengadaanAndReviewerRoleOrderByUpdatedAtDesc(p.getIdPengadaan(), io.ibuprofen.inventra_dd_be.Profile.model.Role.KEPSEK))
+                    .orElse(null);
+            
+            if (tinjauan != null) {
+                alasan = tinjauan.getAlasan(); 
+            }
+        }
+        return PengadaanAsetDetailResponse.builder()
+                .idPengadaan(p.getIdPengadaan())
+                .waktuPengajuan(p.getWaktuPengajuan())
+                .unit(p.getUnit())
+                .namaAset(p.getNamaAset())
+                .merk(p.getMerk())
+                .qty(p.getQty())
+                .estimasiHarga(p.getEstimasiHarga())
+                .tanggalPengadaan(p.getWaktuPengadaan())
+                .kategori(p.getKategoriAset())
+                .linkGambar(p.getLinkGambar())
+                .statusPengadaan(p.getStatusPengadaan())
+                .reviewPengajuan(alasan) 
                 .build();
     }
 }
