@@ -1,6 +1,7 @@
 package io.ibuprofen.inventra_dd_be.PengadaanAset.restcontroller;
 
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaanAsetRequestDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.UpdatePengadaanAsetRequestDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetDetailResponse;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetResponse;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.service.PengadaanAsetService;
@@ -50,5 +51,18 @@ public class PengadaanAsetRestController {
     public ResponseEntity<?> deletePengadaan(@PathVariable UUID id) {
         pengadaanAsetService.deletePengadaan(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(null, "Pengajuan pengadaan berhasil dihapus"));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
+    public ResponseEntity<?> updatePengadaan(
+            @PathVariable UUID id, 
+            @Valid @RequestBody UpdatePengadaanAsetRequestDTO request) {
+        
+        PengadaanAsetDetailResponse result = pengadaanAsetService.updatePengadaan(id, request);
+        
+        return ResponseEntity.ok(
+                BaseResponseDTO.ok(result, "Pengajuan pengadaan berhasil diupdate")
+        ); 
     }
 }

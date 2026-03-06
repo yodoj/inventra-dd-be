@@ -5,6 +5,7 @@ import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetReposit
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaanAsetRequestDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.UpdatePengadaanAsetRequestDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetDetailResponse;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetResponse;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.TinjauPengadaan;
@@ -124,6 +125,64 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         }
 
         pengadaanRepository.delete(pengadaan);
+    }
+
+    @Override
+    @Transactional
+    public PengadaanAsetDetailResponse updatePengadaan(UUID id, UpdatePengadaanAsetRequestDTO request) {
+        UserDetailsImpl userDetails = getCurrentUser(); 
+        Set<String> roles = userDetails.getAuthorities().stream()
+                    .map(item -> item.getAuthority())
+                    .collect(Collectors.toSet()); 
+
+        PengadaanAset pengadaan = pengadaanRepository.findById(id)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Data pengadaan tidak ditemukan."));
+
+        if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk mengubah pengajuan ini.");
+        }
+
+        String currentStatus = pengadaan.getStatusPengadaan();
+        if (!currentStatus.equals("DIAJUKAN") && !currentStatus.equals("DITOLAK")) {
+            throw new IllegalStateException("Hanya pengajuan dengan status DIAJUKAN atau DITOLAK yang dapat diubah.");
+        }
+
+        pengadaan.setNamaAset(request.getNamaAset()); 
+        pengadaan.setKategoriAset(request.getKategoriAset()); 
+        pengadaan.setMerk(request.getMerk()); 
+        pengadaan.setQty(request.getQty()); 
+        pengadaan.setEstimasiHarga(request.getEstimasiHarga()); 
+        pengadaan.setWaktuPengadaan(request.getWaktuPengadaan()); 
+        pengadaan.setLinkGambar(request.getLinkGambar()); 
+
+        if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
+            if (request.getUnit() == null || request.getUnit().trim().isEmpty()) {
+                throw new IllegalArgumentException("Admin wajib menentukan unit untuk pengadaan ini.");
+            }
+            pengadaan.setUnit(request.getUnit()); 
+        } 
+        else {
+            if (request.getUnit() != null && !request.getUnit().trim().isEmpty()) {
+                if (!request.getUnit().equals(userDetails.getUnit())) {
+                    throw new IllegalArgumentException("Anda tidak memiliki akses untuk mengubah unit pengadaan. Unit Anda adalah: " + userDetails.getUnit());
+                }
+            }
+            pengadaan.setUnit(userDetails.getUnit());
+        }
+
+        if (currentStatus.equals("DITOLAK")) {
+            List<TinjauPengadaan> relatedReviews = tinjauRepo.findByPengadaan_IdPengadaanIn(List.of(id)); 
+            if (!relatedReviews.isEmpty()) {
+                tinjauRepo.deleteAll(relatedReviews);
+            }
+        }
+        
+        pengadaan.setStatusPengadaan("DIAJUKAN"); 
+        pengadaan.setReviewPengajuan(null); 
+        pengadaan.setWaktuPengajuan(java.time.LocalDateTime.now()); 
+
+        PengadaanAset saved = pengadaanRepository.save(pengadaan); 
+        return mapToDetailResponse(saved);
     }
 
     private UserDetailsImpl getCurrentUser() {
