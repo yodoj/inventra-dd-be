@@ -2,11 +2,14 @@ package io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.FutureOrPresent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,7 +37,8 @@ public class CreatePengadaanAsetRequestDTO {
     private Long estimasiHarga;
 
     @NotNull(message = "Waktu pengadaan tidak boleh kosong")
-    @Future(message = "Tanggal pengadaan tidak boleh hari ini atau lampau")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @FutureOrPresent(message = "Tanggal pengadaan tidak boleh hari ini atau lampau")
     private LocalDate waktuPengadaan;
 
     @NotBlank(message = "Link gambar tidak boleh kosong") 
