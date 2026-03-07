@@ -59,7 +59,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         List<PengadaanAset> pengadaanList;
 
         // Filter data berdasarkan Role
-        if (role == Role.YAYASAN) {
+        if (role == Role.YAYASAN || role == Role.ADMIN) {
             // Yayasan bisa melihat semua data dari semua unit
             pengadaanList = pengadaanRepo.findAll().stream()
                 .filter(p -> !"DIBELI".equals(p.getStatusPengadaan()))
