@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,8 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PengadaanAsetResponse {
-
+public class PengadaanAsetDetailResponse {
     @JsonProperty("id_pengadaan")
     private UUID idPengadaan;
 
@@ -40,7 +38,7 @@ public class PengadaanAsetResponse {
 
     @JsonProperty("tanggal_pengadaan")
     private LocalDate tanggalPengadaan;
-
+    
     @JsonProperty("kategori")
     private KategoriAset kategori;
 
@@ -49,4 +47,7 @@ public class PengadaanAsetResponse {
 
     @JsonProperty("status_pengadaan")
     private String statusPengadaan;
+    
+    @JsonProperty("review_pengajuan")
+    private String reviewPengajuan; 
 }
