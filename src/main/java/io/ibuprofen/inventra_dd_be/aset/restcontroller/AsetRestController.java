@@ -1,5 +1,6 @@
 package io.ibuprofen.inventra_dd_be.Aset.restcontroller;
 
+import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.CreateAsetBarangRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.CreateAsetRuanganRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.UpdateAsetBarangRequestDTO;
@@ -28,6 +29,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/assets")
@@ -123,21 +128,21 @@ public class AsetRestController {
 
     @GetMapping("/barang/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SARPRAS', 'YAYASAN', 'GURU', 'SISWA', 'KEPSEK')")
-    public ResponseEntity<?> getAsetBarangById(@PathVariable Long id) {
+    public ResponseEntity<?> getAsetBarangById(@PathVariable UUID id) {
         AsetBarangResponseDTO result = asetService.getAsetBarangById(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset barang retrieved successfully"));
     }
 
     @GetMapping("/ruangan/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SARPRAS', 'YAYASAN', 'GURU', 'SISWA', 'KEPSEK')")
-    public ResponseEntity<?> getAsetRuanganById(@PathVariable Long id) {
+    public ResponseEntity<?> getAsetRuanganById(@PathVariable UUID id) {
         AsetRuanganResponseDTO result = asetService.getAsetRuanganById(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan retrieved successfully"));
     }
 
     @PutMapping("/barang/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
-    public ResponseEntity<?> updateAsetBarang(@PathVariable Long id,
+    public ResponseEntity<?> updateAsetBarang(@PathVariable UUID id,
             @Valid @RequestBody UpdateAsetBarangRequestDTO request) {
         AsetBarangResponseDTO result = asetService.updateAsetBarang(id, request);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset barang updated successfully"));
@@ -145,7 +150,7 @@ public class AsetRestController {
 
     @PutMapping("/ruangan/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
-    public ResponseEntity<?> updateAsetRuangan(@PathVariable Long id,
+    public ResponseEntity<?> updateAsetRuangan(@PathVariable UUID id,
             @Valid @RequestBody UpdateAsetRuanganRequestDTO request) {
         AsetRuanganResponseDTO result = asetService.updateAsetRuangan(id, request);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan updated successfully"));
@@ -153,14 +158,14 @@ public class AsetRestController {
 
     @DeleteMapping("/barang/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
-    public ResponseEntity<?> deleteAsetBarang(@PathVariable Long id) {
+    public ResponseEntity<?> deleteAsetBarang(@PathVariable UUID id) {
         asetService.deleteAsetBarang(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset barang deleted successfully"));
     }
 
     @DeleteMapping("/ruangan/{id}")
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
-    public ResponseEntity<?> deleteAsetRuangan(@PathVariable Long id) {
+    public ResponseEntity<?> deleteAsetRuangan(@PathVariable UUID id) {
         asetService.deleteAsetRuangan(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset ruangan deleted successfully"));
     }

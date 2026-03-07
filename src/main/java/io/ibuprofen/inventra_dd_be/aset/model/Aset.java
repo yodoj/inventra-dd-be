@@ -15,6 +15,8 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @Entity
@@ -23,9 +25,9 @@ import org.hibernate.type.SqlTypes;
 public abstract class Aset {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id_aset")
-    private Long id;
+    private UUID id;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "kode_aset", unique = true, nullable = false, columnDefinition = "VARCHAR(255)")
@@ -36,7 +38,7 @@ public abstract class Aset {
     private String namaAset;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "gambar_url_aset", columnDefinition = "TEXT")
+    @Column(name = "gambar_url_aset", nullable = false, columnDefinition = "TEXT")
     private String gambarUrlAset;
 
     @Enumerated(EnumType.STRING)

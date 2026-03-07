@@ -43,6 +43,12 @@ public class GlobalExceptionHandler {
                 .body(BaseResponseDTO.error(404, "Error: " + ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<BaseResponseDTO<Void>> handleIllegalStateException(IllegalStateException ex) {
+        return ResponseEntity.status(403) 
+                .body(BaseResponseDTO.error(403, ex.getMessage()));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleAccessDeniedException(AccessDeniedException ex) {
         return ResponseEntity.status(403)
@@ -54,4 +60,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(500)
                 .body(BaseResponseDTO.error(500, "Internal Server Error: " + ex.getMessage()));
     }
+
+
 }
