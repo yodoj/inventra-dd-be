@@ -32,11 +32,10 @@ public class PengadaanAsetRestController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
-    public ResponseEntity<?> getAllPengadaan() {
-        List<PengadaanAsetResponse> result = pengadaanAsetService.getAllPengadaan();
-        return ResponseEntity.ok(
-                BaseResponseDTO.ok(result, "Data pengajuan pengadaan berhasil diambil")
-        );
+    public ResponseEntity<?> getAllPengadaan(@RequestParam(required = false) String search,
+            @RequestParam(required = false) String sortBy, @RequestParam(required = false) String direction) {
+        List<PengadaanAsetResponse> result = pengadaanAsetService.getAllPengadaan(search, sortBy, direction);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data pengajuan pengadaan berhasil diambil"));
     }
 
     @GetMapping("/{id}")
