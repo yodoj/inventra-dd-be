@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Sort;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
@@ -65,7 +66,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
                 .collect(Collectors.toList());
         } else if (role == Role.KEPSEK) {
             // Kepsek hanya bisa melihat data yang unit pengadaannya sama dengan unit dirinya
-            pengadaanList = pengadaanRepo.findByUnit(unitUser).stream()
+            pengadaanList = pengadaanRepo.findByUnit(unitUser, Sort.by(Sort.Direction.DESC, "waktuPengajuan")).stream()
                 .filter(p -> !"DIBELI".equals(p.getStatusPengadaan()))
                 .collect(Collectors.toList());
         } else {

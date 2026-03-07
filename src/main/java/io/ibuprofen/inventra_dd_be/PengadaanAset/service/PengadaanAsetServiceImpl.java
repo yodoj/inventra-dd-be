@@ -12,6 +12,7 @@ import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.TinjauPengadaan
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.repository.TinjauPengadaanRepository;
 import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Sort;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -76,9 +77,23 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     }
 
     @Override
-    public List<PengadaanAsetResponse> getAllPengadaan() {
+    public List<PengadaanAsetResponse> getAllPengadaan(String search, String sortBy, String direction) {
         UserDetailsImpl userDetails = getCurrentUser();
-        List<PengadaanAset> results = pengadaanRepository.findByUserId_Id(userDetails.getId());
+        List<PengadaanAset> results;
+
+        // Default sorting
+        String sortField = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "waktuPengajuan";
+        Sort.Direction sortDirection = (direction != null && direction.equalsIgnoreCase("ASC")) ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+        Sort sort = Sort.by(sortDirection, sortField);
+
+        if (search != null && !search.trim().isEmpty()) {
+            results = pengadaanRepository
+                    .findByUserId_IdAndNamaAsetContainingIgnoreCaseOrUserId_IdAndMerkContainingIgnoreCase(
+                            userDetails.getId(), search, userDetails.getId(), search, sort);
+        } else {
+            results = pengadaanRepository.findByUserId_Id(userDetails.getId(), sort);
+        }
 
         return results.stream()
                 .map(this::mapToResponse)
