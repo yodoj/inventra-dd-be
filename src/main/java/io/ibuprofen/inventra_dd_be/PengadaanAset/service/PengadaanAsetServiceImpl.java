@@ -91,13 +91,21 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         PengadaanAset pengadaan = pengadaanRepository.findById(id)
                 .orElseThrow(() -> new java.util.NoSuchElementException("Pengajuan pengadaan tidak ditemukan"));
 
-        if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses ke data ini");
-        }
-        if (!pengadaan.getUnit().equals(userDetails.getUnit())) {
-            throw new IllegalStateException("Unit tidak sesuai");
-        }
+        Set<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toSet());
 
+        if (!roles.contains("ADMIN") && !roles.contains("ROLE_ADMIN")) {
+            
+            if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses ke data ini");
+            }
+            
+            if (pengadaan.getUnit() == null || !pengadaan.getUnit().equals(userDetails.getUnit())) {
+                throw new IllegalStateException("Unit tidak sesuai dengan akses Anda");
+            }
+        }
+        
         return mapToDetailResponse(pengadaan);
     }
 
