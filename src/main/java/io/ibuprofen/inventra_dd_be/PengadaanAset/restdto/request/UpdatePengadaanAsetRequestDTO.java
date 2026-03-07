@@ -5,12 +5,11 @@ import java.time.LocalDate;
 import org.hibernate.validator.constraints.URL;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Future;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreatePengadaanAsetRequestDTO {
+public class UpdatePengadaanAsetRequestDTO {
 
     @NotBlank(message = "Nama aset tidak boleh kosong") 
     private String namaAset;
