@@ -57,7 +57,6 @@ public class PengadaanAset {
     private String linkGambar;
 
     // Status alur pengadaan (DIAJUKAN, DISETUJUI, DITOLAK, DIBELI)
-    @Enumerated(EnumType.STRING)
     @Column(name = "status_pengadaan", nullable = false)
     private String statusPengadaan; 
 
