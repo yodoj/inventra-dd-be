@@ -12,7 +12,8 @@ import io.ibuprofen.inventra_dd_be.Aset.restdto.request.UpdateAsetBarangRequestD
 import io.ibuprofen.inventra_dd_be.Aset.restdto.request.UpdateAsetRuanganRequestDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.AsetBarangResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.AsetRuanganResponseDTO;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

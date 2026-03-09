@@ -5,8 +5,10 @@ import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.request.UpdatePasswordRequestDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.request.UpdateProfileRequestDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.response.PasswordHistoryResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.ProfileResponseDTO;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.PasswordHistoryService;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +31,9 @@ public class UserRestController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PasswordHistoryService passwordHistoryService;
 
     @GetMapping("")
     public ResponseEntity<?> getProfile() {
@@ -252,9 +258,59 @@ public class UserRestController {
             user.setPassword(passwordEncoder.encode(passwordRequest.getNewPassword()));
             userRepository.save(user);
 
+            // Catat history perubahan password setelah save sukses
+            passwordHistoryService.recordPasswordChange(userId, user);
+
             return ResponseEntity.ok(BaseResponseDTO.ok(null, "Password updated successfully"));
         } catch (Exception e) {
             System.err.println("Error updating password: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(
+                BaseResponseDTO.error(500, "Error: An unexpected error occurred")
+            );
+        }
+    }
+
+    @GetMapping("/password-history")
+    public ResponseEntity<?> getPasswordHistory(@RequestParam(required = false) UUID userId) {
+        try {
+            // Get current authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(
+                    BaseResponseDTO.error(401, "Session expired / Unauthorized")
+                );
+            }
+
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            UUID requesterId = userDetails.getId();
+            String requesterRole = userDetails.getAuthorities().stream()
+                    .findFirst()
+                    .map(item -> item.getAuthority())
+                    .orElse(null);
+
+            // Tentukan target userId (default: userId dari token, atau parameter jika diberikan)
+            UUID targetUserId = (userId != null) ? userId : requesterId;
+
+            // Validasi authorization:
+            // - Diizinkan jika requester adalah pemilik akun (SELF)
+            // - Atau jika requester adalah SUPERADMIN
+            boolean isSelf = requesterId.equals(targetUserId);
+            boolean isSuperAdmin = "ADMIN".equals(requesterRole);
+
+            if (!isSelf && !isSuperAdmin) {
+                return ResponseEntity.status(403).body(
+                    BaseResponseDTO.error(403, "Forbidden: You can only access your own password history")
+                );
+            }
+
+            // Ambil password history
+            List<PasswordHistoryResponseDTO> history = passwordHistoryService.getPasswordHistory(targetUserId);
+
+            return ResponseEntity.ok(BaseResponseDTO.ok(history, "Password history retrieved successfully"));
+        } catch (Exception e) {
+            System.err.println("Error retrieving password history: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(
                 BaseResponseDTO.error(500, "Error: An unexpected error occurred")

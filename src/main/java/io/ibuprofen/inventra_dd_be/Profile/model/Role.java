@@ -6,5 +6,5 @@ public enum Role {
     SARPRAS,
     YAYASAN,
     KEPSEK,
-    ADMIN
+    ADMIN,
 }
