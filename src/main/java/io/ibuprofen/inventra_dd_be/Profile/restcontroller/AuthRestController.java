@@ -4,7 +4,7 @@ import io.ibuprofen.inventra_dd_be.Profile.restdto.request.LoginRequest;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.JwtResponse;
 import io.ibuprofen.inventra_dd_be.Profile.security.jwt.JwtUtils;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

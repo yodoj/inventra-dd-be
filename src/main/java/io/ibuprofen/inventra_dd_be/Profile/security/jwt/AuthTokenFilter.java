@@ -1,6 +1,5 @@
 package io.ibuprofen.inventra_dd_be.Profile.security.jwt;
 
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +13,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsServiceImpl;
 
 import java.io.IOException;
 
