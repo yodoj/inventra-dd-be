@@ -4,13 +4,13 @@ import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaanAsetRequestDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.UpdatePengadaanAsetRequestDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetDetailResponse;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetResponse;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.TinjauPengadaan;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.repository.TinjauPengadaanRepository;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Sort;
 
@@ -76,30 +76,71 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         return mapToDetailResponse(saved);
     }
 
-    @Override
-    public List<PengadaanAsetResponse> getAllPengadaan(String search, String sortBy, String direction) {
-        UserDetailsImpl userDetails = getCurrentUser();
-        List<PengadaanAset> results;
+@Override
+public List<PengadaanAsetResponse> getAllPengadaan(String search, String statusPengadaan, String kategoriAset, String sortBy, String direction) {
+    UserDetailsImpl userDetails = getCurrentUser();
 
-        // Default sorting
-        String sortField = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "waktuPengajuan";
-        Sort.Direction sortDirection = (direction != null && direction.equalsIgnoreCase("ASC")) ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-        Sort sort = Sort.by(sortDirection, sortField);
-
-        if (search != null && !search.trim().isEmpty()) {
-            results = pengadaanRepository
-                    .findByUserId_IdAndNamaAsetContainingIgnoreCaseOrUserId_IdAndMerkContainingIgnoreCase(
-                            userDetails.getId(), search, userDetails.getId(), search, sort);
-        } else {
-            results = pengadaanRepository.findByUserId_Id(userDetails.getId(), sort);
+    String sortField = "waktu_pengajuan";
+    if (sortBy != null && !sortBy.isBlank()) {
+        switch (sortBy) {
+            case "waktuPengajuan":
+            case "waktu_pengajuan":
+                sortField = "waktu_pengajuan";
+                break;
+            case "namaAset":
+            case "nama_aset":
+                sortField = "nama_aset";
+                break;
+            case "merk":
+                sortField = "merk";
+                break;
+            case "statusPengadaan":
+            case "status_pengadaan":
+                sortField = "status_pengadaan";
+                break;
+            case "kategoriAset":
+            case "kategori_aset":
+            case "kategori":
+                sortField = "kategori_aset";
+                break;
+            default:
+                sortField = "waktu_pengajuan";
         }
-
-        return results.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
     }
 
+    Sort.Direction sortDirection =
+            (direction != null && direction.equalsIgnoreCase("ASC"))
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+
+    Sort sort = Sort.by(sortDirection, sortField);
+
+    String normalizedSearch =
+            (search == null || search.isBlank()) ? null : search.trim().toUpperCase();
+
+    String normalizedStatus =
+            (statusPengadaan == null || statusPengadaan.isBlank() || "SEMUA STATUS".equalsIgnoreCase(statusPengadaan))
+                    ? null
+                    : statusPengadaan.trim().toUpperCase();
+
+    String normalizedKategori =
+            (kategoriAset == null || kategoriAset.isBlank() || "SEMUA KATEGORI".equalsIgnoreCase(kategoriAset))
+                    ? null
+                    : kategoriAset.trim().toUpperCase();
+
+    List<PengadaanAset> results = pengadaanRepository.findByUserWithAllFilters(
+            userDetails.getId(),
+            normalizedSearch,
+            normalizedStatus,
+            normalizedKategori,
+            sort
+    );
+
+    return results.stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
+   
     @Override
     public PengadaanAsetDetailResponse getPengadaanById(UUID id) {
         UserDetailsImpl userDetails = getCurrentUser();

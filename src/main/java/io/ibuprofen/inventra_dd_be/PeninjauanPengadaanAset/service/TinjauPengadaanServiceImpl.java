@@ -26,7 +26,7 @@ import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinj
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import io.ibuprofen.inventra_dd_be.Aset.model.AsetBarang;
 import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository;
@@ -50,8 +50,8 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
   
 
     @Override
-    public List<tinjauPengadaanResponseDTO> getAll() {
-        // Ambil info user yang sedang login
+    public List<tinjauPengadaanResponseDTO> getAll(Status statusPengadaan, String search) {
+    // Ambil info user yang sedang login
         User currentUser = getCurrentUserEntity();
         Role role = currentUser.getRole();
         String unitUser = currentUser.getUnit(); 
@@ -96,7 +96,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
                     )
                 ));
 
-        return pengadaanList.stream().map(p -> {
+        List<tinjauPengadaanResponseDTO> result = pengadaanList.stream().map(p -> {
             Map<Role, TinjauPengadaan> byRole = tinjauanByPengadaanAndRole.getOrDefault(p.getIdPengadaan(), Map.of());
             TinjauPengadaan tY = byRole.get(Role.YAYASAN);
             TinjauPengadaan tK = byRole.get(Role.KEPSEK);
@@ -130,6 +130,28 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
                 .namaReviewer(pick != null && pick.getUser() != null ? pick.getUser().getName() : null)
                 .build();
         }).collect(Collectors.toList());
+
+
+        // Filter by status (opsional)
+        if (statusPengadaan != null) {
+            result = result.stream()
+                .filter(dto -> statusPengadaan.equals(dto.getStatusPengadaan()))
+                .collect(Collectors.toList());
+        }
+
+        // Filter by search — case insensitive, cocokkan namaAset atau merk (opsional)
+        if (search != null && !search.isBlank()) {
+            String keyword = search.trim().toLowerCase();
+            result = result.stream()
+               .filter(dto ->
+                    (dto.getNamaAset()   != null && dto.getNamaAset().toLowerCase().contains(keyword))
+                || (dto.getMerk()       != null && dto.getMerk().toLowerCase().contains(keyword))
+                || (dto.getNamaPengaju() != null && dto.getNamaPengaju().toLowerCase().contains(keyword))
+                )
+                .collect(Collectors.toList());
+        }
+
+        return result;
     }
 
   @Override
