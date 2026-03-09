@@ -14,6 +14,7 @@ import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.tinja
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinjauPengadaanResponseDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.service.TinjauPengadaanService;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.Status;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -27,8 +28,11 @@ public class TinjauPengadaanController {
 
   @GetMapping("/all")
   @PreAuthorize("hasAnyAuthority('KEPSEK','YAYASAN','ADMIN')")
-  public BaseResponseDTO<List<tinjauPengadaanResponseDTO>> getAll() {
-    var result = tinjauService.getAll();
+  public BaseResponseDTO<List<tinjauPengadaanResponseDTO>> getAll(
+    @RequestParam(name = "status_pengadaan", required = false) Status statusPengadaan,
+    @RequestParam(name = "search", required = false) String search
+) {    
+    var result = tinjauService.getAll(statusPengadaan, search);
     return BaseResponseDTO.ok(result, "Berhasil mengambil semua data tinjauan");
   }
 

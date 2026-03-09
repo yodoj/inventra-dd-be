@@ -32,25 +32,33 @@ public class PengadaanAsetRestController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
-    public ResponseEntity<?> getAllPengadaan(@RequestParam(required = false) String search,
-            @RequestParam(required = false) String sortBy, @RequestParam(required = false) String direction) {
-        List<PengadaanAsetResponse> result = pengadaanAsetService.getAllPengadaan(search, sortBy, direction);
+    public ResponseEntity<?> getAllPengadaan(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String kategori,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String direction) {
+
+        List<PengadaanAsetResponse> result = pengadaanAsetService.getAllPengadaan(
+                search, status, kategori, sortBy, direction
+        );
+
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data pengajuan pengadaan berhasil diambil"));
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
-    public ResponseEntity<?> getPengadaanById(@PathVariable UUID id) {
-        PengadaanAsetDetailResponse result = pengadaanAsetService.getPengadaanById(id);
-        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Detail pengajuan berhasil diambil"));
-    }
+        @GetMapping("/{id}")
+        @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
+        public ResponseEntity<?> getPengadaanById(@PathVariable UUID id) {
+            PengadaanAsetDetailResponse result = pengadaanAsetService.getPengadaanById(id);
+            return ResponseEntity.ok(BaseResponseDTO.ok(result, "Detail pengajuan berhasil diambil"));
+        }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
-    public ResponseEntity<?> deletePengadaan(@PathVariable UUID id) {
-        pengadaanAsetService.deletePengadaan(id);
-        return ResponseEntity.ok(BaseResponseDTO.ok(null, "Pengajuan pengadaan berhasil dihapus"));
-    }
+        @DeleteMapping("/{id}")
+        @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
+        public ResponseEntity<?> deletePengadaan(@PathVariable UUID id) {
+            pengadaanAsetService.deletePengadaan(id);
+            return ResponseEntity.ok(BaseResponseDTO.ok(null, "Pengajuan pengadaan berhasil dihapus"));
+        }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")

@@ -138,5 +138,4 @@ public class DataInitializer implements CommandLineRunner {
         long random = System.nanoTime() % 100000000000L;
         return String.format("%11d", Math.abs(random));
     }
-
 }
