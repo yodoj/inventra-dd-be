@@ -20,6 +20,7 @@ public class PengadaanAsetResponse {
     @JsonProperty("id_pengadaan")
     private UUID idPengadaan;
 
+    // Waktu saat pengaju menekan tombol kirim di sistem
     @JsonProperty("waktu_pengajuan")
     private LocalDateTime waktuPengajuan;
 

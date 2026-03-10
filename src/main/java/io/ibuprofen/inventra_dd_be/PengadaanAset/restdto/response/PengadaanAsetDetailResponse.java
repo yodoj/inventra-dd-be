@@ -18,6 +18,7 @@ public class PengadaanAsetDetailResponse {
     @JsonProperty("id_pengadaan")
     private UUID idPengadaan;
 
+    // Waktu saat pengaju menekan tombol kirim di sistem
     @JsonProperty("waktu_pengajuan")
     private LocalDateTime waktuPengajuan;
 
@@ -48,6 +49,7 @@ public class PengadaanAsetDetailResponse {
     @JsonProperty("status_pengadaan")
     private String statusPengadaan;
     
+    // Berisi alasan penolakan atau catatan dari Kepsek/Yayasan
     @JsonProperty("review_pengajuan")
     private String reviewPengajuan; 
 }
