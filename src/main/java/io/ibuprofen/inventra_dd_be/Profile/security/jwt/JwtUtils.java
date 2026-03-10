@@ -1,6 +1,6 @@
 package io.ibuprofen.inventra_dd_be.Profile.security.jwt;
 
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
