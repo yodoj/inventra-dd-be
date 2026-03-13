@@ -59,6 +59,9 @@ public class PengadaanAset {
     @Column(nullable = false)
     private String namaPengaju; 
 
+    @Column
+    private String rolePengaju; 
+
     @Column(name = "review_pengajuan", columnDefinition = "TEXT")
     private String reviewPengajuan;
 

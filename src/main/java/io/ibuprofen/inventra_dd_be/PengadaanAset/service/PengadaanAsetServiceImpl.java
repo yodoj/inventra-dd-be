@@ -70,6 +70,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
             pengadaan.setUnit(userDetails.getUnit());
         }
 
+        pengadaan.setRolePengaju(user.getRole().name());
         pengadaan.setReviewPengajuan(null);
         pengadaan.setWaktuPengajuan(java.time.LocalDateTime.now());
         PengadaanAset saved = pengadaanRepository.save(pengadaan);
