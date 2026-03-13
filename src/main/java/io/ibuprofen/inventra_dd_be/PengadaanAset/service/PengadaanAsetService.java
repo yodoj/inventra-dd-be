@@ -9,8 +9,17 @@ import java.util.UUID;
 
 public interface PengadaanAsetService {
     PengadaanAsetDetailResponse createPengadaan(CreatePengadaanAsetRequestDTO request);
-    List<PengadaanAsetResponse> getAllPengadaan(String search, String statusPengadaan, String kategoriAset, String sortBy, String direction);
+
+    List<PengadaanAsetResponse> getAllPengadaan(
+        String search, 
+        String statusPengadaan, 
+        String kategoriAset, 
+        String sortBy, 
+        String direction);
+
     PengadaanAsetDetailResponse getPengadaanById(UUID id);
+
     void deletePengadaan(UUID id);
+    
     PengadaanAsetDetailResponse updatePengadaan(UUID id, UpdatePengadaanAsetRequestDTO request);
 }

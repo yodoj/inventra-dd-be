@@ -87,7 +87,11 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("*"));
+            configuration.setAllowedOrigins(Arrays.asList(
+            "https://inventra-dd.vercel.app", 
+            "http://localhost:5173", 
+            "http://localhost:8080"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-api-key"));
         configuration.setExposedHeaders(Collections.singletonList("Authorization"));
