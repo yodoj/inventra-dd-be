@@ -13,6 +13,7 @@ import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.request.CreatePengadaan
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.PengadaanAsetDetailResponse;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.PenggantianBarangRusakRequestDTO;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.PenggantianBarangRusakResponseDTO;
+import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.UpdatePenggantianBarangRusakRequestDTO;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.service.PenggantianBarangRusakService;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinjauPengadaanResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
@@ -57,7 +58,7 @@ public class PenggantianBarangRusakController {
     @PreAuthorize("hasAnyAuthority('GURU','SISWA', 'ADMIN')")
     public BaseResponseDTO<PenggantianBarangRusakResponseDTO> updatePengajuan(
             @PathVariable String idPenggantian,
-            @Valid @ModelAttribute PenggantianBarangRusakRequestDTO request) {
+            @Valid @ModelAttribute UpdatePenggantianBarangRusakRequestDTO request) {
 
         PenggantianBarangRusakResponseDTO result =
                 penggantianBarangRusakService.updatePengajuan(

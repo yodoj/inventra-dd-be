@@ -2,6 +2,7 @@ package io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.service;
 
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.PenggantianBarangRusakRequestDTO;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.PenggantianBarangRusakResponseDTO;
+import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.UpdatePenggantianBarangRusakRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.Status;
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
@@ -144,7 +145,7 @@ public class PenggantianBarangRusakServiceImpl implements PenggantianBarangRusak
     }
 
     @Override
-    public PenggantianBarangRusakResponseDTO updatePengajuan(String idPenggantian, PenggantianBarangRusakRequestDTO request, MultipartFile file) {
+    public PenggantianBarangRusakResponseDTO updatePengajuan(String idPenggantian, UpdatePenggantianBarangRusakRequestDTO request, MultipartFile file) {
         User currentUser = getCurrentUserEntity(); 
 
         PenggantianBarangRusak penggantian = repoPenggantian.findByIdPenggantian(idPenggantian)
