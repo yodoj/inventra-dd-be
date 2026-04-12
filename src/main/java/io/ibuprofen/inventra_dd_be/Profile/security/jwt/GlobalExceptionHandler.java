@@ -43,16 +43,22 @@ public class GlobalExceptionHandler {
                 .body(BaseResponseDTO.error(404, "Error: " + ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<BaseResponseDTO<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, "Bad Request: " + ex.getMessage()));
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleIllegalStateException(IllegalStateException ex) {
         return ResponseEntity.status(403) 
-                .body(BaseResponseDTO.error(403, ex.getMessage()));
+                .body(BaseResponseDTO.error(403, "Forbidden: " + ex.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleAccessDeniedException(AccessDeniedException ex) {
-        return ResponseEntity.status(403)
-                .body(BaseResponseDTO.error(403, "Error: " + ex.getMessage()));
+        return ResponseEntity.status(401)
+                .body(BaseResponseDTO.error(401, "Error: " + ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

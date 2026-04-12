@@ -42,6 +42,21 @@ public class AsetBarangResponseDTO {
     @JsonProperty("status_aset")
     private StatusAset statusAset;
 
+    @JsonProperty("qty_tersedia")
+    private Integer qtyTersedia;
+
+    @JsonProperty("qty_rusak")
+    private Integer qtyRusak;
+
+    @JsonProperty("qty_perbaikan")
+    private Integer qtyPerbaikan;
+
+    @JsonProperty("qty_dimusnahkan")
+    private Integer qtyDimusnahkan;
+
+    @JsonProperty("qty_dipinjam")
+    private Integer qtyDipinjam;
+
     @JsonProperty("keterangan_aset")
     private String keteranganAset;
 

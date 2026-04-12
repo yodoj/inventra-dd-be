@@ -37,4 +37,7 @@ public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
         Optional<AsetBarang> findTopByOrderByKodeAsetDesc();
 
         Optional<AsetBarang> findByNamaAsetAndMerkAsetAndUnit(String namaAset, String merk, String unit);
+
+        @Query("SELECT ab FROM AsetBarang ab WHERE ab.unit = :unit AND ab.statusAset = 'TERSEDIA' AND ab.qtyTersedia > 0")
+        java.util.List<AsetBarang> findBorrowableInUnit(@Param("unit") String unit);
 }
