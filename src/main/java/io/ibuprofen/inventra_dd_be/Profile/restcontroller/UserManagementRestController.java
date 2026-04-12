@@ -1,6 +1,7 @@
 package io.ibuprofen.inventra_dd_be.Profile.restcontroller;
 
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
+import io.ibuprofen.inventra_dd_be.Profile.restdto.request.CreateUserRequestDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.UserPerUnitResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserManagementService;
@@ -87,6 +88,23 @@ public class UserManagementRestController {
             return ResponseEntity.status(status).body(BaseResponseDTO.error(status, message));
         } catch (Exception e) {
             System.err.println("Error retrieving all users: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: An unexpected error occurred"));
+        }
+    }
+
+    @PostMapping("")
+    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
+    public ResponseEntity<?> createUser(@RequestBody CreateUserRequestDTO request) {
+        try {
+            userManagementService.createUser(request);
+            return ResponseEntity.status(201).body(BaseResponseDTO.created(null, "Akun pengguna berhasil ditambahkan"));
+        } catch (RuntimeException e) {
+            String message = e.getMessage();
+            int status = message.contains("Unauthorized") ? 403 : 400;
+            return ResponseEntity.status(status).body(BaseResponseDTO.error(status, message));
+        } catch (Exception e) {
+            System.err.println("Error creating user: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: An unexpected error occurred"));
         }
