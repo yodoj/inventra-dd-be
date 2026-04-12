@@ -35,4 +35,7 @@ public interface AsetRuanganRepository extends JpaRepository<AsetRuangan, UUID> 
         Integer findMaxNumericCode();
 
         Optional<AsetRuangan> findTopByOrderByKodeAsetDesc();
+
+        @Query("SELECT ar FROM AsetRuangan ar WHERE ar.unit = :unit AND ar.statusAset = 'TERSEDIA'")
+        java.util.List<AsetRuangan> findBorrowableInUnit(@Param("unit") String unit);
 }
