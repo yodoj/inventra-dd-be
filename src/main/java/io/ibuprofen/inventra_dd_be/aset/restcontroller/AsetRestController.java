@@ -170,6 +170,17 @@ public class AsetRestController {
         return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset ruangan deleted successfully"));
     }
 
+    @GetMapping("/borrowable")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SARPRAS', 'YAYASAN', 'GURU', 'SISWA', 'KEPSEK')")
+    public ResponseEntity<?> getBorrowableAssets(@RequestParam String unit) {
+        if (unit != null && !unit.isEmpty() && !isValidUnit(unit)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter unit tidak valid"));
+        }
+        return ResponseEntity.ok(BaseResponseDTO.ok(asetService.getBorrowableAssets(unit),
+                "Borrowable assets retrieved successfully"));
+    }
+
     private boolean isValidUnit(String unit) {
         List<String> validUnits = Arrays.asList("KB-TK", "SD", "SMP", "SMA");
         return validUnits.contains(unit);

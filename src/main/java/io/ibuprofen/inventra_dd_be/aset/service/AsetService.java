@@ -33,4 +33,6 @@ public interface AsetService {
         void deleteAsetBarang(UUID id);
 
         void deleteAsetRuangan(UUID id);
+
+        java.util.List<io.ibuprofen.inventra_dd_be.Aset.restdto.response.BorrowableAsetResponseDTO> getBorrowableAssets(String unit);
 }

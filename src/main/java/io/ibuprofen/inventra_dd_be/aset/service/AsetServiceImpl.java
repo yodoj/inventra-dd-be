@@ -21,9 +21,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import io.ibuprofen.inventra_dd_be.Aset.restdto.response.BorrowableAsetResponseDTO;
 
 @Service
 public class AsetServiceImpl implements AsetService {
@@ -100,6 +103,13 @@ public class AsetServiceImpl implements AsetService {
         asetBarang.setMerkAset(request.getMerkAset());
         asetBarang.setQtyAset(request.getQtyAset());
         asetBarang.setLokasiAset(request.getLokasiAset());
+
+        // Set qty status breakdown: All quantity goes to 'Tersedia' on creation
+        asetBarang.setQtyTersedia(request.getQtyAset());
+        asetBarang.setQtyRusak(0);
+        asetBarang.setQtyPerbaikan(0);
+        asetBarang.setQtyDimusnahkan(0);
+        asetBarang.setQtyDipinjam(0);
 
         if (roles.contains("YAYASAN") || roles.contains("ROLE_YAYASAN") || roles.contains("ADMIN")
                 || roles.contains("ROLE_ADMIN")) {
@@ -192,6 +202,25 @@ public class AsetServiceImpl implements AsetService {
         asetBarang.setMerkAset(request.getMerkAset());
         asetBarang.setQtyAset(request.getQtyAset());
         asetBarang.setLokasiAset(request.getLokasiAset());
+
+        // Validate qty sum alignment
+        int totalQtyDetails = (request.getQtyTersedia() != null ? request.getQtyTersedia() : 0) +
+                (request.getQtyRusak() != null ? request.getQtyRusak() : 0) +
+                (request.getQtyPerbaikan() != null ? request.getQtyPerbaikan() : 0) +
+                (request.getQtyDimusnahkan() != null ? request.getQtyDimusnahkan() : 0) +
+                (request.getQtyDipinjam() != null ? request.getQtyDipinjam() : 0);
+
+        if (totalQtyDetails != request.getQtyAset()) {
+            throw new IllegalArgumentException(
+                "Jumlah rincian ketersediaan (" + totalQtyDetails + ") harus sama dengan total kuantitas aset (" + request.getQtyAset() + ")");
+        }
+
+        // Update qty status breakdown
+        asetBarang.setQtyTersedia(request.getQtyTersedia() != null ? request.getQtyTersedia() : 0);
+        asetBarang.setQtyRusak(request.getQtyRusak() != null ? request.getQtyRusak() : 0);
+        asetBarang.setQtyPerbaikan(request.getQtyPerbaikan() != null ? request.getQtyPerbaikan() : 0);
+        asetBarang.setQtyDimusnahkan(request.getQtyDimusnahkan() != null ? request.getQtyDimusnahkan() : 0);
+        asetBarang.setQtyDipinjam(request.getQtyDipinjam() != null ? request.getQtyDipinjam() : 0);
 
         if (roles.contains("YAYASAN") || roles.contains("ROLE_YAYASAN") || roles.contains("ADMIN")
                 || roles.contains("ROLE_ADMIN")) {
@@ -367,6 +396,11 @@ public class AsetServiceImpl implements AsetService {
                 .lokasiAset(aset.getLokasiAset())
                 .kategoriAset(aset.getKategoriAset())
                 .statusAset(aset.getStatusAset())
+                .qtyTersedia(aset.getQtyTersedia())
+                .qtyRusak(aset.getQtyRusak())
+                .qtyPerbaikan(aset.getQtyPerbaikan())
+                .qtyDimusnahkan(aset.getQtyDimusnahkan())
+                .qtyDipinjam(aset.getQtyDipinjam())
                 .keteranganAset(aset.getKeteranganAset())
                 .unit(aset.getUnit())
                 .build();
@@ -383,5 +417,38 @@ public class AsetServiceImpl implements AsetService {
                 .keteranganAset(aset.getKeteranganAset())
                 .unit(aset.getUnit())
                 .build();
+    }
+
+    @Override
+    public List<BorrowableAsetResponseDTO> getBorrowableAssets(String unit) {
+        List<BorrowableAsetResponseDTO> result = new ArrayList<>();
+
+        // Add goods
+        List<AsetBarang> barangList = asetBarangRepository.findBorrowableInUnit(unit);
+        for (AsetBarang b : barangList) {
+            result.add(BorrowableAsetResponseDTO.builder()
+                    .idAset(b.getId())
+                    .kodeAset(b.getKodeAset())
+                    .namaAset(b.getNamaAset())
+                    .merkAset(b.getMerkAset())
+                    .kategoriAset(b.getKategoriAset())
+                    .qtyTersedia(b.getQtyTersedia())
+                    .build());
+        }
+
+        // Add rooms
+        List<AsetRuangan> ruanganList = asetRuanganRepository.findBorrowableInUnit(unit);
+        for (AsetRuangan r : ruanganList) {
+            result.add(BorrowableAsetResponseDTO.builder()
+                    .idAset(r.getId())
+                    .kodeAset(r.getKodeAset())
+                    .namaAset(r.getNamaAset())
+                    .merkAset(null)
+                    .kategoriAset(r.getKategoriAset())
+                    .qtyTersedia(1) // Room is always 1 if available
+                    .build());
+        }
+
+        return result;
     }
 }
