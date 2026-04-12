@@ -116,7 +116,8 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
                 .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
                 .merk(p.getMerk())
                 .qty(p.getQty())
-                .unit(p.getUnit())
+                .unitPengaju(p.getUnit())
+                .rolePengaju(p.getRolePengaju())
                 .namaPengaju(p.getNamaPengaju())
                 .estimasiHarga(p.getEstimasiHarga())
                 .waktuPengadaan(p.getWaktuPengadaan())
@@ -187,7 +188,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
         .merk(p.getMerk())
         .qty(p.getQty())
-        .unit(p.getUnit())
+        .unitPengaju(p.getUnit())
         .estimasiHarga(p.getEstimasiHarga())
         .waktuPengadaan(p.getWaktuPengadaan())
         .namaPengaju(p.getNamaPengaju())
@@ -365,6 +366,9 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         if (file != null && !file.isEmpty()) {
             fileName = saveFileToLocal(file); 
         }
+        if (hargaFinal == null || hargaFinal <= 0) {
+            throw new IllegalStateException("Harga tidak boleh kurang dari atau sama dengan 0");
+        }
 
         t.setHarga(hargaFinal);
         t.setBuktiPembelian(fileName);
@@ -418,12 +422,13 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         .id(t.getId())
         .idPengadaan(t.getPengadaanId())
         .namaPengaju(p.getNamaPengaju())
+        .rolePengaju(p.getRolePengaju())
         .namaAset(p.getNamaAset())
         .linkGambar(p.getLinkGambar())
         .kategori(p.getKategoriAset() != null ? p.getKategoriAset().toString() : null)
         .merk(p.getMerk())
         .qty(p.getQty())
-        .unit(p.getUnit())
+        .unitPengaju(p.getUnit())
         .estimasiHarga(p.getEstimasiHarga())
         .waktuPengadaan(p.getWaktuPengadaan())
         .statusPengadaan(t.getStatus())

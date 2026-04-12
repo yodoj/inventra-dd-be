@@ -26,7 +26,8 @@ public class tinjauPengadaanResponseDTO {
     private LocalDate waktuPengadaan;
     private String namaPengaju;
     private Status statusPengadaan;
-    private String unit;
+    private String unitPengaju;
+    private String rolePengaju;
 
     private String alasan;
     private LocalDateTime kepsekFirstReviewedAt;

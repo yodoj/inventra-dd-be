@@ -27,15 +27,32 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<BaseResponseDTO<Void>> handleMessageNotReadableException(HttpMessageNotReadableException ex) {
-        String message = "JSON parse error: Data format tidak sesuai atau ada field yang salah";
+    public ResponseEntity<BaseResponseDTO<Void>> handleMessageNotReadableException(
+            HttpMessageNotReadableException ex) {
 
-        // Log the actual cause for debugging if needed
-        // logger.error("Parse error: ", ex.getMessage());
+        String message = ex.getMessage();
 
-        return ResponseEntity.badRequest()
-                .body(BaseResponseDTO.error(400, message));
+        // khusus enum Status
+        if (message != null && message.contains("Status")) {
+            return ResponseEntity.status(400)
+                    .body(BaseResponseDTO.error(400, "Status tersebut tidak ada"));
+        }
+
+        // error JSON umum
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, "JSON parse error: Data format tidak sesuai atau ada field yang salah"));
     }
+    
+    // @ExceptionHandler(HttpMessageNotReadableException.class)
+    // public ResponseEntity<BaseResponseDTO<Void>> handleMessageNotReadableException(HttpMessageNotReadableException ex) {
+    //     String message = "JSON parse error: Data format tidak sesuai atau ada field yang salah";
+
+    //     // Log the actual cause for debugging if needed
+    //     // logger.error("Parse error: ", ex.getMessage());
+
+    //     return ResponseEntity.badRequest()
+    //             .body(BaseResponseDTO.error(400, message));
+    // }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleNoSuchElementException(NoSuchElementException ex) {
@@ -66,6 +83,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(500)
                 .body(BaseResponseDTO.error(500, "Internal Server Error: " + ex.getMessage()));
     }
-
 
 }
