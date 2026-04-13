@@ -24,6 +24,12 @@ public class UpdateAsetBarangRequestDTO {
     @NotNull(message = "Status aset tidak boleh boleh kosong")
     private StatusAset statusAset;
 
+    private Integer qtyTersedia;
+    private Integer qtyRusak;
+    private Integer qtyPerbaikan;
+    private Integer qtyDimusnahkan;
+    private Integer qtyDipinjam;
+
     private String keteranganAset;
 
     @NotBlank(message = "Merk aset tidak boleh kosong")
