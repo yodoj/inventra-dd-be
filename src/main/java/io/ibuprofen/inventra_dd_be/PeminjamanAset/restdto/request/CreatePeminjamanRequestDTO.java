@@ -30,4 +30,6 @@ public class CreatePeminjamanRequestDTO {
     @NotNull(message = "Kuantitas tidak boleh kosong")
     @Min(value = 1, message = "Kuantitas minimal 1")
     private Integer qty;
+
+    private String unitTujuan;
 }
