@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -69,6 +70,7 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
     }
 
     @Override
+    @Transactional
     public TinjauPeminjamanResponseDTO create(UUID peminjamanId, TinjauPeminjamanRequestDTO request) {
         UserDetailsImpl userDetails = getCurrentUser();
         
@@ -101,7 +103,8 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
                 .build();
 
         peminjamanRepository.save(peminjaman);
-        return mapToResponseDTO(peminjaman, tinjauRepository.save(peninjauanBaru));
+        TinjauPeminjaman savedTinjau = tinjauRepository.save(peninjauanBaru);
+        return mapToResponseDTO(peminjaman, savedTinjau);
     }
 
     @Override
@@ -122,22 +125,28 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
     }
 
     private void eksekusiPeminjamanAset(PeminjamanAset peminjaman) {
-        Aset aset = peminjaman.getAset();
-        
-        if (aset instanceof AsetBarang) {
-            AsetBarang barang = (AsetBarang) aset;
+        UUID asetId = peminjaman.getAset().getId();
 
-            barang.setQtyTersedia(barang.getQtyTersedia() - peminjaman.getQty());
+        Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
+        if (barangOpt.isPresent()) {
+            AsetBarang barang = barangOpt.get();
+
+            int qtyBaru = barang.getQtyTersedia() - peminjaman.getQty();
+            if (qtyBaru < 0) {
+                throw new IllegalStateException("Stok tidak mencukupi untuk disetujui");
+            }
+            barang.setQtyTersedia(qtyBaru);
             barang.setQtyDipinjam(barang.getQtyDipinjam() + peminjaman.getQty());
-            
+
             asetBarangRepository.save(barang);
-        } 
-        else if (aset instanceof AsetRuangan) {
-            AsetRuangan ruangan = (AsetRuangan) aset;
-            ruangan.setStatusAset(StatusAset.SEDANG_DIPINJAM);
-            
-            asetRuanganRepository.save(ruangan);
+            return;
         }
+
+        AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
+                .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan: " + asetId));
+
+        ruangan.setStatusAset(StatusAset.SEDANG_DIPINJAM);
+        asetRuanganRepository.save(ruangan);
     }
 
     private UserDetailsImpl getCurrentUser() {
