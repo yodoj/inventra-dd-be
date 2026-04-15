@@ -1,16 +1,25 @@
 package io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.service;
 
+import io.ibuprofen.inventra_dd_be.Aset.model.Aset;
 import io.ibuprofen.inventra_dd_be.Aset.model.AsetBarang;
+import io.ibuprofen.inventra_dd_be.Aset.model.AsetRuangan;
+import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository;
+import io.ibuprofen.inventra_dd_be.Aset.repository.AsetRuanganRepository;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetRepository;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.model.TinjauPeminjaman;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.repository.TinjauPeminjamanRepository;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restdto.request.TinjauPeminjamanRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restdto.response.TinjauPeminjamanResponseDTO;
-import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,62 +31,133 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
-    private final TinjauPeminjamanRepository tinjauRepository;
-    private final PeminjamanAsetRepository peminjamanRepository;
-    private final AsetBarangRepository asetBarangRepository;
+    @Autowired
+    private TinjauPeminjamanRepository tinjauRepository;
+
+    @Autowired
+    private PeminjamanAsetRepository peminjamanRepository;
+
+    @Autowired
+    private AsetBarangRepository asetBarangRepository;
+
+    @Autowired
+    private AsetRuanganRepository asetRuanganRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
-    public List<TinjauPeminjamanResponseDTO> getAll(User currentUser) {
-        List<TinjauPeminjaman> listTinjau;
+    public List<TinjauPeminjamanResponseDTO> getAll() {
+        UserDetailsImpl userDetails = getCurrentUser();
+        List<PeminjamanAset> daftarPeminjaman;
 
-        if (currentUser.getRole() == Role.ADMIN) {
-            listTinjau = tinjauRepository.findAll();
+        if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"))) {
+            daftarPeminjaman = peminjamanRepository.findAll();
         } else {
-            listTinjau = tinjauRepository.findAll().stream()
-                    .filter(t -> t.getPeminjaman().getUnitTujuan().equalsIgnoreCase(currentUser.getUnit()))
+            daftarPeminjaman = peminjamanRepository.findAll().stream()
+                    .filter(peminjaman -> peminjaman.getUnitTujuan() != null && 
+                           peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit()))
                     .collect(Collectors.toList());
         }
 
-        return listTinjau.stream().map(this::mapToDTO).collect(Collectors.toList());
+        return daftarPeminjaman.stream()
+                .map(peminjaman -> {
+                    TinjauPeminjaman tinjau = tinjauRepository.findByPeminjaman_Id(peminjaman.getId()).orElse(null);
+                    return mapToResponseDTO(peminjaman, tinjau);
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
-    public TinjauPeminjamanResponseDTO create(UUID peminjamanId, TinjauPeminjamanRequestDTO req, User currentUser) {
-        PeminjamanAset peminjaman = peminjamanRepository.findById(peminjamanId)
-                .orElseThrow(() -> new RuntimeException("Data Peminjaman tidak ditemukan"));
-
-        peminjaman.setStatusPeminjaman(req.getStatusPeminjaman());
+    public TinjauPeminjamanResponseDTO create(UUID peminjamanId, TinjauPeminjamanRequestDTO request) {
+        UserDetailsImpl userDetails = getCurrentUser();
         
-        if (req.getStatusPeminjaman() == PeminjamanAset.StatusPeminjaman.DISETUJUI) {
-            if (peminjaman.getAset() instanceof AsetBarang) {
-                AsetBarang barang = (AsetBarang) peminjaman.getAset();
-                if (barang.getQtyTersedia() < peminjaman.getQty()) {
-                    throw new RuntimeException("Stok barang tidak mencukupi!");
-                }
-                barang.setQtyTersedia(barang.getQtyTersedia() - peminjaman.getQty());
-                asetBarangRepository.save(barang);
-            }
+        PeminjamanAset peminjaman = peminjamanRepository.findById(peminjamanId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Data Peminjaman tidak ditemukan"));
+
+        if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalStateException("Peninjauan hanya dapat dilakukan pada pengajuan dengan status DIAJUKAN");
         }
 
-        TinjauPeminjaman tinjau = TinjauPeminjaman.builder()
-                .peninjau(currentUser)
+        if (request.getStatusPeminjaman() == PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalArgumentException("Peninjau hanya boleh memilih status DISETUJUI atau DITOLAK");
+        }
+
+        User peninjau = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new IllegalStateException("User peninjau tidak ditemukan"));
+
+        peminjaman.setStatusPeminjaman(request.getStatusPeminjaman());
+        
+        if (request.getStatusPeminjaman() == PeminjamanAset.StatusPeminjaman.DISETUJUI) {
+            eksekusiPeminjamanAset(peminjaman);
+        }
+
+        TinjauPeminjaman peninjauanBaru = TinjauPeminjaman.builder()
+                .peninjau(peninjau)
                 .peminjaman(peminjaman)
-                .rolePeninjau(currentUser.getRole())
-                .statusPeminjaman(req.getStatusPeminjaman())
-                .alasan(req.getAlasan())
+                .rolePeninjau(peninjau.getRole())
+                .statusPeminjaman(request.getStatusPeminjaman())
+                .alasan(request.getAlasan())
                 .build();
 
-        return mapToDTO(tinjauRepository.save(tinjau));
+        peminjamanRepository.save(peminjaman);
+        return mapToResponseDTO(peminjaman, tinjauRepository.save(peninjauanBaru));
     }
 
-    private TinjauPeminjamanResponseDTO mapToDTO(TinjauPeminjaman tinjau) {
-        PeminjamanAset peminjaman = tinjau.getPeminjaman();
-        User peminjam = peminjaman.getPeminjam();
-        AsetBarang aset = (AsetBarang) peminjaman.getAset();
+    @Override
+    public TinjauPeminjamanResponseDTO getPeninjauanById(UUID idPeminjaman) {
+        PeminjamanAset peminjaman = peminjamanRepository.findById(idPeminjaman)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Data peminjaman dengan ID tersebut tidak ditemukan"));
 
-        return TinjauPeminjamanResponseDTO.builder()
-                .idPeninjauan(tinjau != null ? tinjau.getIdPeninjauan() : null)
+        TinjauPeminjaman tinjau = tinjauRepository.findByPeminjaman_Id(idPeminjaman).orElse(null);
+
+        UserDetailsImpl userDetails = getCurrentUser();
+        boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        
+        if (!isAdmin && !peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit())) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses untuk melihat detail unit lain");
+        }
+
+        return mapToResponseDTO(peminjaman, tinjau);
+    }
+
+    private void eksekusiPeminjamanAset(PeminjamanAset peminjaman) {
+        Aset aset = peminjaman.getAset();
+        
+        if (aset instanceof AsetBarang) {
+            AsetBarang barang = (AsetBarang) aset;
+
+            barang.setQtyTersedia(barang.getQtyTersedia() - peminjaman.getQty());
+            barang.setQtyDipinjam(barang.getQtyDipinjam() + peminjaman.getQty());
+            
+            asetBarangRepository.save(barang);
+        } 
+        else if (aset instanceof AsetRuangan) {
+            AsetRuangan ruangan = (AsetRuangan) aset;
+            ruangan.setStatusAset(StatusAset.SEDANG_DIPINJAM);
+            
+            asetRuanganRepository.save(ruangan);
+        }
+    }
+
+    private UserDetailsImpl getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (UserDetailsImpl) authentication.getPrincipal(); 
+    }
+
+    private TinjauPeminjamanResponseDTO mapToResponseDTO(PeminjamanAset peminjaman, TinjauPeminjaman tinjau) {
+        User peminjam = peminjaman.getPeminjam();
+        Aset aset = peminjaman.getAset();
+
+        TinjauPeminjamanResponseDTO.TinjauPeminjamanResponseDTOBuilder builder = TinjauPeminjamanResponseDTO.builder()
                 .idPeminjaman(peminjaman.getId())
+                .waktuPengajuan(peminjaman.getWaktuPengajuan())
+                .waktuPeminjaman(peminjaman.getWaktuPeminjaman())
+                .waktuPengembalian(peminjaman.getWaktuPengembalian())
+                .qty(peminjaman.getQty())
+                .tujuanPeminjaman(peminjaman.getTujuanPeminjaman())
+                .unitTujuan(peminjaman.getUnitTujuan())
+                .statusPeminjaman(peminjaman.getStatusPeminjaman())
                 .idPeminjam(peminjam.getId())
                 .namaPeminjam(peminjam.getName())
                 .rolePeminjam(peminjam.getRole())
@@ -85,20 +165,21 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
                 .idAset(aset.getId())
                 .kodeAset(aset.getKodeAset())
                 .namaAset(aset.getNamaAset())
-                .merkAset(aset.getMerkAset())
-                .kategoriAset(aset.getKategoriAset())
-                .qty(peminjaman.getQty())
-                .waktuPeminjaman(peminjaman.getWaktuPeminjaman())
-                .waktuPengembalian(peminjaman.getWaktuPengembalian())
-                .waktuPengajuan(peminjaman.getWaktuPengajuan())
-                .tujuanPeminjaman(peminjaman.getTujuanPeminjaman())
-                .unitTujuan(peminjaman.getUnitTujuan())
-                .statusPeminjaman(tinjau.getStatusPeminjaman())
-                .alasan(tinjau != null ? tinjau.getAlasan() : null)
-                .idPeninjau(tinjau != null && tinjau.getPeninjau() != null ? tinjau.getPeninjau().getId() : null)
-                .rolePeninjau(tinjau != null ? tinjau.getRolePeninjau() : null)
-                .createdAt(tinjau != null ? tinjau.getCreatedAt() : null)
-                .updatedAt(tinjau != null ? tinjau.getUpdatedAt() : null)
-                .build();
+                .kategoriAset(aset.getKategoriAset());
+
+        if (aset instanceof AsetBarang) {
+            builder.merkAset(((AsetBarang) aset).getMerkAset());
+        }
+
+        if (tinjau != null) {
+            builder.idPeninjauan(tinjau.getIdPeninjauan())
+                   .alasan(tinjau.getAlasan())
+                   .idPeninjau(tinjau.getPeninjau().getId())
+                   .rolePeninjau(tinjau.getRolePeninjau())
+                   .createdAt(tinjau.getCreatedAt())
+                   .updatedAt(tinjau.getUpdatedAt());
+        }
+
+        return builder.build();
     }
 }

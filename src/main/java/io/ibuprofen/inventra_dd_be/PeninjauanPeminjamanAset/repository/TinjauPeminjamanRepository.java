@@ -18,7 +18,7 @@ public interface TinjauPeminjamanRepository extends JpaRepository<TinjauPeminjam
     Optional<TinjauPeminjaman> findByIdPeninjauan(Long idPeninjauan);
 
     // Mencari peninjauan berdasarkan ID Peminjaman
-    Optional<TinjauPeminjaman> findByPeminjamanId(UUID idPeminjaman);
+    Optional<TinjauPeminjaman> findByPeminjaman_Id(UUID idPeminjaman);
 
     // Query untuk filter berdasarkan status peminjaman, unit, dan tanggal peminjaman
     @Query("SELECT t FROM TinjauPeminjaman t JOIN t.peminjaman p JOIN p.aset a " +
