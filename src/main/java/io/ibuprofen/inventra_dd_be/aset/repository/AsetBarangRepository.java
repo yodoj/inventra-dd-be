@@ -15,15 +15,15 @@ import org.springframework.data.repository.query.Param;
 @Repository
 public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
         @Query(value = "SELECT ab.*, a.* FROM aset_barang ab JOIN aset a ON ab.id_aset = a.id_aset WHERE " +
-                        "(:unit IS NULL OR a.unit = :unit) AND " +
-                        "(:kategori IS NULL OR a.kategori_aset = :kategori) AND " +
-                        "(:status IS NULL OR a.status_aset = :status) AND " +
-                        "(:search IS NULL OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%') OR ab.merk_aset ILIKE CONCAT('%', :search, '%'))", countQuery = "SELECT count(*) FROM aset_barang ab JOIN aset a ON ab.id_aset = a.id_aset WHERE "
+                        "(:unit IS NULL OR :unit = '' OR a.unit ILIKE :unit) AND " +
+                        "(:kategori IS NULL OR :kategori = '' OR a.kategori_aset = :kategori) AND " +
+                        "(:status IS NULL OR :status = '' OR a.status_aset = :status) AND " +
+                        "(:search IS NULL OR :search = '' OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%') OR ab.merk_aset ILIKE CONCAT('%', :search, '%'))", countQuery = "SELECT count(*) FROM aset_barang ab JOIN aset a ON ab.id_aset = a.id_aset WHERE "
                                         +
-                                        "(:unit IS NULL OR a.unit = :unit) AND " +
-                                        "(:kategori IS NULL OR a.kategori_aset = :kategori) AND " +
-                                        "(:status IS NULL OR a.status_aset = :status) AND " +
-                                        "(:search IS NULL OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%') OR ab.merk_aset ILIKE CONCAT('%', :search, '%'))", nativeQuery = true)
+                                        "(:unit IS NULL OR :unit = '' OR a.unit ILIKE :unit) AND " +
+                                        "(:kategori IS NULL OR :kategori = '' OR a.kategori_aset = :kategori) AND " +
+                                        "(:status IS NULL OR :status = '' OR a.status_aset = :status) AND " +
+                                        "(:search IS NULL OR :search = '' OR a.nama_aset ILIKE CONCAT('%', :search, '%') OR a.kode_aset ILIKE CONCAT('%', :search, '%') OR ab.merk_aset ILIKE CONCAT('%', :search, '%'))", nativeQuery = true)
         Page<AsetBarang> findWithFilters(
                         @Param("unit") String unit,
                         @Param("kategori") String kategori,
@@ -38,6 +38,8 @@ public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
 
         Optional<AsetBarang> findByNamaAsetAndMerkAsetAndUnit(String namaAset, String merk, String unit);
 
-        @Query("SELECT ab FROM AsetBarang ab WHERE ab.unit = :unit AND ab.statusAset = 'TERSEDIA' AND ab.qtyTersedia > 0")
+        @Query("SELECT ab FROM AsetBarang ab WHERE " +
+               "(:unit IS NULL OR :unit = '' OR ab.unit = :unit) AND " +
+               "ab.statusAset = 'TERSEDIA' AND ab.qtyTersedia > 0")
         java.util.List<AsetBarang> findBorrowableInUnit(@Param("unit") String unit);
 }
