@@ -182,8 +182,11 @@ public class AsetRestController {
     }
 
     private boolean isValidUnit(String unit) {
-        List<String> validUnits = Arrays.asList("KB-TK", "SD", "SMP", "SMA");
-        return validUnits.contains(unit);
+        if (unit == null) return false;
+        List<String> validUnits = Arrays.asList(
+            "KB-TK", "SD", "SMP", "SMA", "GLOBAL", "PUSAT", "ADMIN", "YAYASAN"
+        );
+        return validUnits.contains(unit.toUpperCase());
     }
 
     private boolean isValidStatus(String status) {

@@ -15,8 +15,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CreatePeminjamanLintasUnitRequestDTO {
 
-    @NotBlank(message = "Unit asal aset tidak boleh kosong")
-    private String unitAsalAset;
+    @NotBlank(message = "Unit peminjam tidak boleh kosong")
+    private String unitPeminjam;
 
     @NotBlank(message = "Unit tujuan tidak boleh kosong")
     private String unitTujuan;
