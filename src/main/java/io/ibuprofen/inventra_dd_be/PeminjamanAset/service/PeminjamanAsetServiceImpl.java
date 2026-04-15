@@ -65,11 +65,6 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
 
         String unitTujuan = user.getUnit();
-        if (user.getRole() != io.ibuprofen.inventra_dd_be.Profile.model.Role.GURU && user.getRole() != io.ibuprofen.inventra_dd_be.Profile.model.Role.SISWA) {
-            if (request.getUnitTujuan() != null && !request.getUnitTujuan().isBlank()) {
-                unitTujuan = request.getUnitTujuan();
-            }
-        }
 
         PeminjamanAset peminjaman = PeminjamanAset.builder()
                 .peminjam(user)
@@ -94,22 +89,24 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Unit must be different between peminjam and asset owner
-        if (user.getUnit().equals(request.getUnitAsalAset())) {
-            throw new IllegalArgumentException("Lintas unit loan must be from a different unit");
+        // Validation: Borrower unit must match requester's origin unit
+        if (!user.getUnit().equals(request.getUnitPeminjam())) {
+            throw new IllegalArgumentException("Borrower unit mismatch with requested unit peminjam");
         }
 
-        // Validation: Aset unit must match requested unitAsalAset
-        if (!aset.getUnit().equals(request.getUnitAsalAset())) {
-            throw new IllegalArgumentException("Asset unit mismatch with requested unit asal");
+        // Validation: Aset unit must match requested unitTujuan
+        if (!aset.getUnit().equals(request.getUnitTujuan())) {
+            throw new IllegalArgumentException("Asset unit mismatch with requested unit tujuan");
+        }
+
+        // Validation: Unit must be different between peminjam and asset owner
+        if (request.getUnitPeminjam().equals(request.getUnitTujuan())) {
+            throw new IllegalArgumentException("Lintas unit loan must be between different units");
         }
 
         validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
 
-        String unitTujuan = user.getUnit();
-        if (user.getRole() != io.ibuprofen.inventra_dd_be.Profile.model.Role.GURU && user.getRole() != io.ibuprofen.inventra_dd_be.Profile.model.Role.SISWA) {
-            unitTujuan = request.getUnitTujuan(); // Sarpras/Admin must specify
-        }
+        String unitTujuan = request.getUnitTujuan();
 
         PeminjamanAset peminjaman = PeminjamanAset.builder()
                 .peminjam(user)
@@ -158,8 +155,20 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
     private PeminjamanAsetResponseDTO convertToResponseDTO(PeminjamanAset peminjaman) {
         String merkAset = null;
-        if (peminjaman.getAset() instanceof AsetBarang) {
-            merkAset = ((AsetBarang) peminjaman.getAset()).getMerkAset();
+        Aset aset = peminjaman.getAset();
+        
+        if (aset.getKategoriAset() == io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_HABIS_PAKAI || 
+            aset.getKategoriAset() == io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_TIDAK_HABIS_PAKAI) {
+            
+            if (aset instanceof AsetBarang) {
+                merkAset = ((AsetBarang) aset).getMerkAset();
+            } else {
+                // Handle Hibernate proxies
+                Optional<AsetBarang> ab = asetBarangRepository.findById(aset.getId());
+                if (ab.isPresent()) {
+                    merkAset = ab.get().getMerkAset();
+                }
+            }
         }
 
         return PeminjamanAsetResponseDTO.builder()
