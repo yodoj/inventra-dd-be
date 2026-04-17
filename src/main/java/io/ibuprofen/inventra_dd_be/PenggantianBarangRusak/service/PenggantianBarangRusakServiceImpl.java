@@ -4,14 +4,17 @@ import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.PenggantianBar
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.PenggantianBarangRusakResponseDTO;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.UpdatePenggantianBarangRusakRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.Status;
+import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.repository.TinjauPengadaanRepository;
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.TinjauPenggantianBarang.repository.TinjauPenggantianBarangRepository;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.model.PenggantianBarangRusak;
 import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.repository.PenggantianBarangRusakRepo;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -33,6 +37,8 @@ public class PenggantianBarangRusakServiceImpl implements PenggantianBarangRusak
 
     private final PenggantianBarangRusakRepo repoPenggantian;
     private final UserRepository userRepository;
+    @Autowired
+    private TinjauPenggantianBarangRepository tinjauRepo;
 
     @Override
     public List<PenggantianBarangRusakResponseDTO> getAll(String search, String status) {
@@ -68,6 +74,7 @@ public class PenggantianBarangRusakServiceImpl implements PenggantianBarangRusak
                         .merk(p.getMerk())
                         .contohBarang(p.getContohBarang())
                         .status(p.getStatus())
+                        .alasan(p.getReviewPengajuan())
                         .keterangan(p.getKeterangan())
                         .build()
                 ).collect(Collectors.toList());
@@ -231,6 +238,34 @@ public class PenggantianBarangRusakServiceImpl implements PenggantianBarangRusak
     }
 
     private PenggantianBarangRusakResponseDTO mapToResponse(PenggantianBarangRusak p) {
+        String alasan = null;
+        String reviewerRole = null;
+        String namaReviewer = null;
+        LocalDateTime reviewCreatedAt = null;
+        LocalDateTime reviewUpdatedAt = null;
+        
+        if (!"DIAJUKAN".equals(p.getStatus())) {
+            var tinjauan = tinjauRepo
+                .findFirstByPenggantian_IdPenggantianOrderByUpdatedAtDesc(p.getIdPenggantian())
+                .orElse(null);
+            
+            if (tinjauan != null) {
+                alasan = tinjauan.getAlasan(); 
+                reviewerRole = tinjauan.getReviewerRole() != null ? tinjauan.getReviewerRole().name() : null;
+                namaReviewer = tinjauan.getUser() != null 
+                    ? tinjauan.getUser().getName() 
+                    : null;
+                reviewCreatedAt = tinjauan.getCreatedAt();
+                reviewUpdatedAt = tinjauan.getUpdatedAt();
+
+    //             private LocalDateTime updatedAt;
+    // private LocalDateTime createdAt;
+
+    // private UUID userId;
+    // private String reviewerRole;
+    // private String namaReviewer; namaReviewer
+            }
+        }
         return PenggantianBarangRusakResponseDTO.builder()
                 .idPenggantian(p.getIdPenggantian())
                 .namaBarang(p.getNamaBarang())
@@ -243,6 +278,11 @@ public class PenggantianBarangRusakServiceImpl implements PenggantianBarangRusak
                 .namaPengaju(p.getNamaPengaju())
                 .unitPengaju(p.getUnitPengaju())
                 .rolePengaju(p.getRolePengaju().name())
+                .alasan(p.getReviewPengajuan())
+                .reviewCreatedAt(reviewCreatedAt)
+                .reviewUpdatedAt(reviewUpdatedAt)
+                .reviewerRole(reviewerRole)
+                .namaReviewer(namaReviewer)
                 .build();
     }
 
