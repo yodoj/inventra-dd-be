@@ -257,7 +257,6 @@ public class TinjauPenggantianBarangServiceImpl implements TinjauPenggantianBara
             }
         }
 
-        // Cari tinjauan terakhir untuk ROLE INI berdasarkan penggantianId
         TinjauPenggantianBarang t = repo.findFirstByPenggantian_IdPenggantianAndReviewerRoleOrderByUpdatedAtDesc(penggantianId, role)
                 .orElseThrow(() -> new IllegalStateException("Anda belum memiliki akses peninjauan. Silakan lakukan Create terlebih dahulu."));
 

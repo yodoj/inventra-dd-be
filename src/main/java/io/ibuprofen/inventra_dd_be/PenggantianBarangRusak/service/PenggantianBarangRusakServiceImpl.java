@@ -257,13 +257,6 @@ public class PenggantianBarangRusakServiceImpl implements PenggantianBarangRusak
                     : null;
                 reviewCreatedAt = tinjauan.getCreatedAt();
                 reviewUpdatedAt = tinjauan.getUpdatedAt();
-
-    //             private LocalDateTime updatedAt;
-    // private LocalDateTime createdAt;
-
-    // private UUID userId;
-    // private String reviewerRole;
-    // private String namaReviewer; namaReviewer
             }
         }
         return PenggantianBarangRusakResponseDTO.builder()
