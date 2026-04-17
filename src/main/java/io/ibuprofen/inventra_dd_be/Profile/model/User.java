@@ -41,7 +41,6 @@ public class User {
     @NotBlank
     private String unit;
 
-    @NotBlank
     private String phoneNumber;
 
     @Pattern(regexp = "^[0-9]+$", message = "NISN harus hanya berisi angka")
