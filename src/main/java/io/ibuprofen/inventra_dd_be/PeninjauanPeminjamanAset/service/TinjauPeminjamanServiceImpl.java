@@ -175,9 +175,13 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
                 .kodeAset(aset.getKodeAset())
                 .namaAset(aset.getNamaAset())
                 .kategoriAset(aset.getKategoriAset());
-
         if (aset instanceof AsetBarang) {
             builder.merkAset(((AsetBarang) aset).getMerkAset());
+        } else {
+            Optional<AsetBarang> asetBarang = asetBarangRepository.findById(aset.getId());
+            if (asetBarang.isPresent()) {
+                builder.merkAset(asetBarang.get().getMerkAset());
+            }
         }
 
         if (tinjau != null) {
