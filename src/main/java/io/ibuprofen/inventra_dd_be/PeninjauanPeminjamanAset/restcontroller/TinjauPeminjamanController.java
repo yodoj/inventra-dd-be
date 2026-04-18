@@ -50,4 +50,16 @@ public class TinjauPeminjamanController {
                 BaseResponseDTO.ok(result, "Detail peninjauan peminjaman berhasil diambil")
         );
     }
+
+    @PutMapping("/{idPeminjaman}")
+    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
+    public ResponseEntity<?> updateTinjauPeminjaman(
+            @PathVariable("idPeminjaman") UUID idPeminjaman,
+            @Valid @RequestBody TinjauPeminjamanRequestDTO request) {
+        
+        TinjauPeminjamanResponseDTO result = tinjauPeminjamanService.update(idPeminjaman, request);
+        return ResponseEntity.ok(
+                BaseResponseDTO.ok(result, "Peninjauan peminjaman aset berhasil tersimpan")
+        );
+    }
 }

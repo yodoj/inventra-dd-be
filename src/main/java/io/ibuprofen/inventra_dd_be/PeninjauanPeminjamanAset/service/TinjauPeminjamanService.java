@@ -11,4 +11,6 @@ public interface TinjauPeminjamanService {
     TinjauPeminjamanResponseDTO create(UUID idPeminjaman, TinjauPeminjamanRequestDTO request);
 
     TinjauPeminjamanResponseDTO getPeninjauanById(UUID idPeminjaman);
+
+    TinjauPeminjamanResponseDTO update(UUID idPeminjaman, TinjauPeminjamanRequestDTO request);
 }

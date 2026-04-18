@@ -7,6 +7,7 @@ import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetRuanganRepository;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset;
+import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetRepository;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.model.TinjauPeminjaman;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.repository.TinjauPeminjamanRepository;
@@ -15,7 +16,7 @@ import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restdto.response.Tin
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
-import io.ibuprofen.inventra_dd_be.Profile.model.Role;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -77,6 +79,11 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         PeminjamanAset peminjaman = peminjamanRepository.findById(peminjamanId)
                 .orElseThrow(() -> new java.util.NoSuchElementException("Data Peminjaman tidak ditemukan"));
 
+        boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        if (!isAdmin && !peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit())) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses untuk meninjau peminjaman unit lain");
+        }
+
         if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
             throw new IllegalStateException("Peninjauan hanya dapat dilakukan pada pengajuan dengan status DIAJUKAN");
         }
@@ -124,6 +131,53 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         return mapToResponseDTO(peminjaman, tinjau);
     }
 
+    @Override
+    @Transactional
+    public TinjauPeminjamanResponseDTO update(UUID idPeminjaman, TinjauPeminjamanRequestDTO request) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        
+        PeminjamanAset peminjaman = peminjamanRepository.findById(idPeminjaman)
+                .orElseThrow(() -> new NoSuchElementException("Data Peminjaman tidak ditemukan"));
+
+        if (request.getStatusPeminjaman() == StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalArgumentException("Peninjau hanya boleh memilih status DISETUJUI atau DITOLAK");
+        }
+        
+        TinjauPeminjaman tinjauLama = tinjauRepository.findByPeminjaman_Id(idPeminjaman)
+                .orElseThrow(() -> new IllegalStateException("Data peninjauan belum ada"));
+
+        boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        if (!isAdmin && !peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit())) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses untuk mengubah peninjauan unit lain");
+        }
+
+        StatusPeminjaman statusLama = peminjaman.getStatusPeminjaman();
+        StatusPeminjaman statusBaru = request.getStatusPeminjaman();
+
+        if (statusLama != statusBaru) {
+            if (statusLama == StatusPeminjaman.DISETUJUI && statusBaru == StatusPeminjaman.DITOLAK) {
+                batalkanEksekusiPeminjamanAset(peminjaman);
+            } 
+
+            else if (statusLama == StatusPeminjaman.DITOLAK && statusBaru == StatusPeminjaman.DISETUJUI) {
+                eksekusiPeminjamanAset(peminjaman);
+            }
+        }
+
+        User peninjauBaru = userRepository.findById(userDetails.getId())
+            .orElseThrow(() -> new IllegalStateException("User peninjau tidak ditemukan"));
+        peminjaman.setStatusPeminjaman(statusBaru); 
+        tinjauLama.setPeninjau(peninjauBaru);
+        tinjauLama.setRolePeninjau(peninjauBaru.getRole());
+        tinjauLama.setStatusPeminjaman(statusBaru);
+        tinjauLama.setAlasan(request.getAlasan()); 
+
+        peminjamanRepository.save(peminjaman); 
+        TinjauPeminjaman savedTinjau = tinjauRepository.save(tinjauLama); 
+
+        return mapToResponseDTO(peminjaman, savedTinjau);
+    }
+
     private void eksekusiPeminjamanAset(PeminjamanAset peminjaman) {
         UUID asetId = peminjaman.getAset().getId();
 
@@ -143,10 +197,27 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         }
 
         AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
-                .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan: " + asetId));
+                .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan"));
 
         ruangan.setStatusAset(StatusAset.SEDANG_DIPINJAM);
         asetRuanganRepository.save(ruangan);
+    }
+
+    private void batalkanEksekusiPeminjamanAset(PeminjamanAset peminjaman) {
+        UUID asetId = peminjaman.getAset().getId(); 
+        Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
+        
+        if (barangOpt.isPresent()) {
+            AsetBarang barang = barangOpt.get();
+            barang.setQtyTersedia(barang.getQtyTersedia() + peminjaman.getQty()); 
+            barang.setQtyDipinjam(barang.getQtyDipinjam() - peminjaman.getQty());
+            asetBarangRepository.save(barang);
+        } else {
+            AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
+                    .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan")); 
+            ruangan.setStatusAset(StatusAset.TERSEDIA);
+            asetRuanganRepository.save(ruangan); 
+        }
     }
 
     private UserDetailsImpl getCurrentUser() {
