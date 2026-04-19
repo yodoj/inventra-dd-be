@@ -2,6 +2,7 @@ package io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto;
 
 import lombok.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -20,6 +21,13 @@ public class PenggantianBarangRusakResponseDTO {
     private String namaPengaju;
     private String unitPengaju;
     private String rolePengaju; 
+
+    private String alasan;
+    private LocalDateTime reviewUpdatedAt;
+    private LocalDateTime reviewCreatedAt;
+    private String reviewerRole;
+    private String namaReviewer;
+
 
 
 }
