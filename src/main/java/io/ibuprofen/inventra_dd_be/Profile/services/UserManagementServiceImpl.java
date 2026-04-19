@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
 
 @Service
@@ -182,6 +183,59 @@ public class UserManagementServiceImpl implements UserManagementService {
                 .build();
 
         userRepository.save(newUser);
+    }
+
+    @Override
+    public UserPerUnitResponseDTO getUserDetailInSameUnit(UUID userId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Error: User not authenticated");
+        }
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UUID sarprasId = userDetails.getId();
+
+        Optional<User> sarprasOpt = userRepository.findById(sarprasId);
+        if (sarprasOpt.isEmpty()) {
+            throw new RuntimeException("Error: Current user not found");
+        }
+
+        User sarprasUser = sarprasOpt.get();
+        String sarprasUnit = sarprasUser.getUnit();
+
+        // RBAC check: Only SARPRAS
+        if (sarprasUser.getRole() != Role.SARPRAS) {
+            throw new IllegalStateException("Unauthorized access, SARPRAS role required");
+        }
+
+        // Fetch the requested user
+        Optional<User> targetUserOpt = userRepository.findById(userId);
+        if (targetUserOpt.isEmpty()) {
+            throw new NoSuchElementException("User not found");
+        }
+
+        User targetUser = targetUserOpt.get();
+
+        // Check if target user is in the same unit as the SARPRAS user
+        if (!targetUser.getUnit().equals(sarprasUnit)) {
+            throw new IllegalStateException("Unauthorized access");
+        }
+
+        // Build the response DTO with role-specific fields
+        UserPerUnitResponseDTO.UserPerUnitResponseDTOBuilder builder = UserPerUnitResponseDTO.builder()
+                .id(targetUser.getId())
+                .email(targetUser.getEmail())
+                .name(targetUser.getName())
+                .phoneNumber(targetUser.getPhoneNumber())
+                .role(targetUser.getRole() != null ? targetUser.getRole().name() : null)
+                .unit(targetUser.getUnit());
+
+        // Add role-specific fields
+        if (targetUser.getRole() == Role.SISWA) {
+            builder.nisn(targetUser.getNisn()).kelas(targetUser.getKelas());
+        }
+
+        return builder.build();
     }
 
     private void validatePassword(String password) {

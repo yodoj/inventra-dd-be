@@ -12,4 +12,6 @@ public interface UserManagementService {
     Page<UserPerUnitResponseDTO> getAllUsers(String unit, String search, Role role, Pageable pageable);
 
     void createUser(CreateUserRequestDTO request);
+    
+    UserPerUnitResponseDTO getUserDetailInSameUnit(java.util.UUID userId);
 }

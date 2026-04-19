@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -56,6 +57,13 @@ public class UserManagementRestController {
             e.printStackTrace();
             return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: An unexpected error occurred"));
         }
+    }
+
+    @GetMapping("/per-unit/{id}")
+    @PreAuthorize("hasAuthority('SARPRAS')")
+    public ResponseEntity<?> getUserDetailInSameUnit(@PathVariable UUID id) {
+        UserPerUnitResponseDTO user = userManagementService.getUserDetailInSameUnit(id);
+        return ResponseEntity.ok(BaseResponseDTO.ok(user, "Successfully retrieved user detail"));
     }
 
     @GetMapping("")
