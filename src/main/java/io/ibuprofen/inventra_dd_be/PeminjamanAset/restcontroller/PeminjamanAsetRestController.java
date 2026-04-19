@@ -53,7 +53,7 @@ public class PeminjamanAsetRestController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'SARPRAS', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'SARPRAS', 'ADMIN')")
     public ResponseEntity<?> getPeminjamanById(@PathVariable UUID id) {
         PeminjamanAsetResponseDTO result = peminjamanAsetService.getPeminjamanById(id);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data peminjaman retrieved successfully"));
@@ -96,7 +96,7 @@ public class PeminjamanAsetRestController {
     }
 
     @PostMapping("/lintas-unit")
-    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
     public ResponseEntity<?> createPeminjamanLintasUnit(@Valid @RequestBody CreatePeminjamanLintasUnitRequestDTO request) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         PeminjamanAsetResponseDTO result = peminjamanAsetService.createPeminjamanLintasUnit(request, userDetails.getId());
@@ -104,7 +104,7 @@ public class PeminjamanAsetRestController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'ADMIN')")
     public ResponseEntity<?> updatePeminjaman(
             @PathVariable UUID id,
             @Valid @RequestBody UpdatePeminjamanRequestDTO request) {
@@ -114,7 +114,7 @@ public class PeminjamanAsetRestController {
     }
 
     @PutMapping("/lintas-unit/{id}")
-    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
     public ResponseEntity<?> updatePeminjamanLintasUnit(
             @PathVariable UUID id,
             @Valid @RequestBody UpdatePeminjamanLintasUnitRequestDTO request) {
@@ -124,7 +124,7 @@ public class PeminjamanAsetRestController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'ADMIN')")
     public ResponseEntity<?> deletePeminjaman(@PathVariable UUID id) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         peminjamanAsetService.deletePeminjaman(id, userDetails.getId());
@@ -132,7 +132,7 @@ public class PeminjamanAsetRestController {
     }
 
     @DeleteMapping("/lintas-unit/{id}")
-    @PreAuthorize("hasAnyAuthority('SARPRAS', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
     public ResponseEntity<?> deletePeminjamanLintasUnit(@PathVariable UUID id) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         peminjamanAsetService.deletePeminjamanLintasUnit(id, userDetails.getId());

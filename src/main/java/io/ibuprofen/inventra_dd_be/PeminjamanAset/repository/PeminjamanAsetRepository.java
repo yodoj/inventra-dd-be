@@ -19,7 +19,7 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
     @Query("SELECT p FROM PeminjamanAset p JOIN p.peminjam u JOIN p.aset a WHERE u.id = :peminjamId AND u.unit <> a.unit")
     Page<PeminjamanAset> findByPeminjamIdAndLintasUnit(UUID peminjamId, Pageable pageable);
 
-    @Query("SELECT p FROM PeminjamanAset p JOIN p.peminjam u JOIN p.aset a WHERE u.unit = a.unit")
+    @Query("SELECT p FROM PeminjamanAset p JOIN p.peminjam u JOIN p.aset a WHERE u.unit = a.unit AND u.role IN (io.ibuprofen.inventra_dd_be.Profile.model.Role.GURU, io.ibuprofen.inventra_dd_be.Profile.model.Role.SISWA)")
     Page<PeminjamanAset> findAllUnitSendiri(Pageable pageable);
 
     @Query("SELECT p FROM PeminjamanAset p JOIN p.peminjam u JOIN p.aset a WHERE u.unit <> a.unit")

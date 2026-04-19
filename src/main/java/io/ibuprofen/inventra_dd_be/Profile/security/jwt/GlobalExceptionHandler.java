@@ -74,8 +74,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleAccessDeniedException(AccessDeniedException ex) {
-        return ResponseEntity.status(401)
-                .body(BaseResponseDTO.error(401, "Error: " + ex.getMessage()));
+        return ResponseEntity.status(403)
+                .body(BaseResponseDTO.error(403, "Error: Forbidden access. You do not have permission to access this resource."));
     }
 
     @ExceptionHandler(Exception.class)

@@ -71,9 +71,13 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Unit must match
-        if (!user.getUnit().equals(aset.getUnit())) {
+        // Validation: Unit must match (Relaxed for ADMIN)
+        if (!user.getUnit().equals(aset.getUnit()) && user.getRole() != Role.ADMIN) {
             throw new IllegalStateException("Asset does not belong to your unit");
+        }
+
+        if (request.getWaktuPeminjaman().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new IllegalArgumentException("Waktu peminjaman tidak boleh sebelum waktu sekarang");
         }
 
         validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
@@ -103,8 +107,8 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Borrower unit must match requester's origin unit
-        if (!user.getUnit().equals(request.getUnitPeminjam())) {
+        // Validation: Borrower unit must match requester's origin unit (Relaxed for ADMIN)
+        if (!user.getUnit().equals(request.getUnitPeminjam()) && user.getRole() != Role.ADMIN) {
             throw new IllegalArgumentException("Borrower unit mismatch with requested unit peminjam");
         }
 
@@ -116,6 +120,10 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         // Validation: Unit must be different between peminjam and asset owner
         if (request.getUnitPeminjam().equals(request.getUnitTujuan())) {
             throw new IllegalArgumentException("Lintas unit loan must be between different units");
+        }
+
+        if (request.getWaktuPeminjaman().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new IllegalArgumentException("Waktu peminjaman tidak boleh sebelum waktu sekarang");
         }
 
         validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
@@ -163,7 +171,7 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        if (!user.getUnit().trim().equalsIgnoreCase(aset.getUnit().trim())) {
+        if (!user.getUnit().trim().equalsIgnoreCase(aset.getUnit().trim()) && user.getRole() != Role.ADMIN) {
              throw new IllegalStateException("Aset bukan milik unit Anda");
         }
 
@@ -174,7 +182,7 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         peminjaman.setWaktuPengembalian(request.getWaktuPengembalian());
         peminjaman.setQty(request.getQty());
         peminjaman.setTujuanPeminjaman(request.getTujuanPeminjaman());
-        peminjaman.setUnitTujuan(user.getUnit());
+        peminjaman.setUnitTujuan(aset.getUnit());
 
         PeminjamanAset saved = peminjamanAsetRepository.save(peminjaman);
         return convertToResponseDTO(saved);
@@ -198,8 +206,8 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Borrower unit must match requester's origin unit
-        if (!user.getUnit().trim().equalsIgnoreCase(request.getUnitPeminjam().trim())) {
+        // Validation: Borrower unit must match requester's origin unit (Relaxed for ADMIN)
+        if (!user.getUnit().trim().equalsIgnoreCase(request.getUnitPeminjam().trim()) && user.getRole() != Role.ADMIN) {
             throw new IllegalArgumentException("Borrower unit mismatch with requested unit peminjam");
         }
 
