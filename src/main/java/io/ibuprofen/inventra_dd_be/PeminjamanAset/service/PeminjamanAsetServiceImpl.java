@@ -8,15 +8,16 @@ import io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetRuanganRepository;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetRepository;
-import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.CreatePeminjamanLintasUnitRequestDTO;
-import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.CreatePeminjamanRequestDTO;
+import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.*;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.response.PeminjamanAsetResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
     @Autowired
@@ -47,6 +49,18 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
     @Override
     public Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, Pageable pageable) {
         Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndLintasUnit(userId, pageable);
+        return peminjamanPage.map(this::convertToResponseDTO);
+    }
+
+    @Override
+    public Page<PeminjamanAsetResponseDTO> getAllPeminjaman(Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllUnitSendiri(pageable);
+        return peminjamanPage.map(this::convertToResponseDTO);
+    }
+
+    @Override
+    public Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllLintasUnit(pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
@@ -124,6 +138,132 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         return convertToResponseDTO(saved);
     }
 
+    @Override
+    public PeminjamanAsetResponseDTO getPeminjamanById(UUID id) {
+        PeminjamanAset peminjaman = peminjamanAsetRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Data peminjaman tidak ditemukan"));
+        return convertToResponseDTO(peminjaman);
+    }
+
+    @Override
+    public PeminjamanAsetResponseDTO updatePeminjaman(UUID idPeminjaman, UpdatePeminjamanRequestDTO request, UUID userId) {
+        PeminjamanAset peminjaman = peminjamanAsetRepository.findById(idPeminjaman)
+                .orElseThrow(() -> new NoSuchElementException("Data peminjaman tidak ditemukan"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!peminjaman.getPeminjam().getId().equals(userId) && user.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk mengubah pengajuan ini");
+        }
+
+        if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalStateException("Pengajuan hanya dapat diperbarui jika status masih DIAJUKAN");
+        }
+
+        Aset aset = findAsetById(request.getIdAset());
+
+        if (!user.getUnit().trim().equalsIgnoreCase(aset.getUnit().trim())) {
+             throw new IllegalStateException("Aset bukan milik unit Anda");
+        }
+
+        validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
+
+        peminjaman.setAset(aset);
+        peminjaman.setWaktuPeminjaman(request.getWaktuPeminjaman());
+        peminjaman.setWaktuPengembalian(request.getWaktuPengembalian());
+        peminjaman.setQty(request.getQty());
+        peminjaman.setTujuanPeminjaman(request.getTujuanPeminjaman());
+        peminjaman.setUnitTujuan(user.getUnit());
+
+        PeminjamanAset saved = peminjamanAsetRepository.save(peminjaman);
+        return convertToResponseDTO(saved);
+    }
+
+    @Override
+    public PeminjamanAsetResponseDTO updatePeminjamanLintasUnit(UUID idPeminjaman, UpdatePeminjamanLintasUnitRequestDTO request, UUID userId) {
+        PeminjamanAset peminjaman = peminjamanAsetRepository.findById(idPeminjaman)
+                .orElseThrow(() -> new NoSuchElementException("Data peminjaman tidak ditemukan"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!peminjaman.getPeminjam().getId().equals(userId) && user.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk mengubah pengajuan ini");
+        }
+
+        if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalStateException("Pengajuan hanya dapat diperbarui jika status masih DIAJUKAN");
+        }
+
+        Aset aset = findAsetById(request.getIdAset());
+
+        // Validation: Borrower unit must match requester's origin unit
+        if (!user.getUnit().trim().equalsIgnoreCase(request.getUnitPeminjam().trim())) {
+            throw new IllegalArgumentException("Borrower unit mismatch with requested unit peminjam");
+        }
+
+        // Validation: Aset unit must match requested unitTujuan
+        if (!aset.getUnit().trim().equalsIgnoreCase(request.getUnitTujuan().trim())) {
+            throw new IllegalArgumentException("Asset unit mismatch with requested unit tujuan");
+        }
+
+        // Validation: Unit must be different between peminjam and asset owner
+        if (request.getUnitPeminjam().trim().equalsIgnoreCase(request.getUnitTujuan().trim())) {
+            throw new IllegalArgumentException("Lintas unit loan must be between different units");
+        }
+
+        validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
+
+        peminjaman.setAset(aset);
+        peminjaman.setWaktuPeminjaman(request.getWaktuPeminjaman());
+        peminjaman.setWaktuPengembalian(request.getWaktuPengembalian());
+        peminjaman.setQty(request.getQty());
+        peminjaman.setTujuanPeminjaman(request.getTujuanPeminjaman());
+        peminjaman.setUnitTujuan(request.getUnitTujuan());
+
+        PeminjamanAset saved = peminjamanAsetRepository.save(peminjaman);
+        return convertToResponseDTO(saved);
+    }
+
+    @Override
+    public void deletePeminjaman(UUID id, UUID userId) {
+        PeminjamanAset peminjaman = peminjamanAsetRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Data peminjaman tidak ditemukan"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!peminjaman.getPeminjam().getId().equals(userId) && user.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk menghapus pengajuan ini");
+        }
+
+        if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalStateException("Pengajuan hanya dapat dihapus jika status masih DIAJUKAN");
+        }
+
+        peminjamanAsetRepository.delete(peminjaman);
+    }
+
+    @Override
+    public void deletePeminjamanLintasUnit(UUID id, UUID userId) {
+        PeminjamanAset peminjaman = peminjamanAsetRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Data peminjaman tidak ditemukan"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!peminjaman.getPeminjam().getId().equals(userId) && user.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk menghapus pengajuan ini");
+        }
+
+        if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {
+            throw new IllegalStateException("Pengajuan hanya dapat dihapus jika status masih DIAJUKAN");
+        }
+
+        peminjamanAsetRepository.delete(peminjaman);
+    }
+
     private Aset findAsetById(UUID id) {
         Optional<AsetBarang> barang = asetBarangRepository.findById(id);
         if (barang.isPresent()) return barang.get();
@@ -135,6 +275,10 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
     }
 
     private void validateLoanRequest(Aset aset, LocalDateTime start, LocalDateTime end, Integer qty) {
+        if (aset.getKategoriAset() == io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_HABIS_PAKAI) {
+            throw new IllegalArgumentException("Barang habis pakai tidak dapat dipinjam");
+        }
+
         if (end.isBefore(start)) {
             throw new IllegalArgumentException("Returning time must be after borrowing time");
         }

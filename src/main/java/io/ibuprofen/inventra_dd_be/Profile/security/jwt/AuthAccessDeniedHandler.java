@@ -17,10 +17,10 @@ public class AuthAccessDeniedHandler implements AccessDeniedHandler {
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
         response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
         String jsonResponse = String.format(
-                "{\"status\": 401, \"message\": \"Error: Unauthorized access. You do not have permission to access this resource.\", \"data\": null}");
+                "{\"status\": 403, \"message\": \"Error: Forbidden access. You do not have permission to access this resource.\", \"data\": null}");
 
         response.getWriter().write(jsonResponse);
     }

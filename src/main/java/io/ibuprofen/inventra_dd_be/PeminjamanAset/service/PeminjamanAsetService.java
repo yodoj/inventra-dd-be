@@ -6,11 +6,26 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
+import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.*;
+
 public interface PeminjamanAsetService {
     Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, Pageable pageable);
     Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, Pageable pageable);
 
-    PeminjamanAsetResponseDTO createPeminjaman(io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.CreatePeminjamanRequestDTO request, UUID userId);
+    Page<PeminjamanAsetResponseDTO> getAllPeminjaman(Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(Pageable pageable);
 
-    PeminjamanAsetResponseDTO createPeminjamanLintasUnit(io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.CreatePeminjamanLintasUnitRequestDTO request, UUID userId);
+    PeminjamanAsetResponseDTO getPeminjamanById(UUID id);
+
+    PeminjamanAsetResponseDTO createPeminjaman(CreatePeminjamanRequestDTO request, UUID userId);
+
+    PeminjamanAsetResponseDTO createPeminjamanLintasUnit(CreatePeminjamanLintasUnitRequestDTO request, UUID userId);
+
+    PeminjamanAsetResponseDTO updatePeminjaman(UUID idPeminjaman, UpdatePeminjamanRequestDTO request, UUID userId);
+
+    PeminjamanAsetResponseDTO updatePeminjamanLintasUnit(UUID idPeminjaman, UpdatePeminjamanLintasUnitRequestDTO request, UUID userId);
+    
+    void deletePeminjaman(UUID id, UUID userId);
+    
+    void deletePeminjamanLintasUnit(UUID id, UUID userId);
 }
