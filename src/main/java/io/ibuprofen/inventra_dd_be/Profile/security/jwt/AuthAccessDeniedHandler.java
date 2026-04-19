@@ -20,7 +20,7 @@ public class AuthAccessDeniedHandler implements AccessDeniedHandler {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
         String jsonResponse = String.format(
-                "{\"status\": 403, \"message\": \"Error: Forbidden access. You do not have permission to access this resource.\", \"data\": null}");
+                "{\"status\": 403, \"message\": \"Error: Access Denied. You do not have permission to access this resource.\", \"data\": null}");
 
         response.getWriter().write(jsonResponse);
     }
