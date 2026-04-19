@@ -29,7 +29,10 @@ public class PeminjamanAsetRestController {
     public ResponseEntity<?> getMyPeminjaman(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) boolean all) {
+            @RequestParam(required = false) String unit,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean all) {
         
         if (page < 0 || size < 1) {
             return ResponseEntity.badRequest()
@@ -42,11 +45,27 @@ public class PeminjamanAsetRestController {
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ADMIN"));
 
+        // Default all to true for Admin if not specified
+        boolean shouldShowAll = (all != null) ? all : isAdmin;
+
+        io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman statusEnum = null;
+        if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("Semua Status")) {
+            try {
+                statusEnum = io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Ignore invalid status
+            }
+        }
+
+        // Pre-process parameters for Postgres compatibility
+        String unitParam = (unit == null || unit.isEmpty() || unit.equalsIgnoreCase("Semua Unit")) ? null : unit.trim().toLowerCase();
+        String searchParam = (search == null || search.isEmpty()) ? null : "%" + search.trim().toLowerCase() + "%";
+
         Page<PeminjamanAsetResponseDTO> result;
-        if (all && isAdmin) {
-            result = peminjamanAsetService.getAllPeminjaman(pageable);
+        if (shouldShowAll && isAdmin) {
+            result = peminjamanAsetService.getAllPeminjaman(unitParam, statusEnum, searchParam, pageable);
         } else {
-            result = peminjamanAsetService.getMyPeminjaman(userDetails.getId(), pageable);
+            result = peminjamanAsetService.getMyPeminjaman(userDetails.getId(), unitParam, statusEnum, searchParam, pageable);
         }
         
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data pengajuan peminjaman unit sendiri retrieved successfully"));
@@ -64,7 +83,10 @@ public class PeminjamanAsetRestController {
     public ResponseEntity<?> getMyPeminjamanLintasUnit(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) boolean all) {
+            @RequestParam(required = false) String unit,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean all) {
         
         if (page < 0 || size < 1) {
             return ResponseEntity.badRequest()
@@ -77,11 +99,27 @@ public class PeminjamanAsetRestController {
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ADMIN"));
 
+        // Default all to true for Admin if not specified
+        boolean shouldShowAll = (all != null) ? all : isAdmin;
+
+        io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman statusEnum = null;
+        if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("Semua Status")) {
+            try {
+                statusEnum = io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Ignore invalid status
+            }
+        }
+
+        // Pre-process parameters for Postgres compatibility
+        String unitParam = (unit == null || unit.isEmpty() || unit.equalsIgnoreCase("Semua Unit")) ? null : unit.trim().toLowerCase();
+        String searchParam = (search == null || search.isEmpty()) ? null : "%" + search.trim().toLowerCase() + "%";
+
         Page<PeminjamanAsetResponseDTO> result;
-        if (all && isAdmin) {
-            result = peminjamanAsetService.getAllPeminjamanLintasUnit(pageable);
+        if (shouldShowAll && isAdmin) {
+            result = peminjamanAsetService.getAllPeminjamanLintasUnit(unitParam, statusEnum, searchParam, pageable);
         } else {
-            result = peminjamanAsetService.getMyPeminjamanLintasUnit(userDetails.getId(), pageable);
+            result = peminjamanAsetService.getMyPeminjamanLintasUnit(userDetails.getId(), unitParam, statusEnum, searchParam, pageable);
         }
         
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data pengajuan peminjaman lintas unit retrieved successfully"));

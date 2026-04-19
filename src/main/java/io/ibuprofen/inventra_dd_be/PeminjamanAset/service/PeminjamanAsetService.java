@@ -9,11 +9,11 @@ import java.util.UUID;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.*;
 
 public interface PeminjamanAsetService {
-    Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, Pageable pageable);
-    Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
 
-    Page<PeminjamanAsetResponseDTO> getAllPeminjaman(Pageable pageable);
-    Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getAllPeminjaman(String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
 
     PeminjamanAsetResponseDTO getPeminjamanById(UUID id);
 

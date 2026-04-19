@@ -41,26 +41,26 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
     private UserRepository userRepository;
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndUnitSendiri(userId, pageable);
+    public Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndUnitSendiriFiltered(userId, unit, status, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndLintasUnit(userId, pageable);
+    public Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndLintasUnitFiltered(userId, unit, status, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getAllPeminjaman(Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllUnitSendiri(pageable);
+    public Page<PeminjamanAsetResponseDTO> getAllPeminjaman(String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllUnitSendiriFiltered(unit, status, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllLintasUnit(pageable);
+    public Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllLintasUnitFiltered(unit, status, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
@@ -71,8 +71,8 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Unit must match (Relaxed for ADMIN)
-        if (!user.getUnit().equals(aset.getUnit()) && user.getRole() != Role.ADMIN) {
+        // Validation: Unit must match
+        if (!user.getUnit().equals(aset.getUnit())) {
             throw new IllegalStateException("Asset does not belong to your unit");
         }
 
@@ -107,9 +107,9 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Borrower unit must match requester's origin unit (Relaxed for ADMIN)
-        if (!user.getUnit().equals(request.getUnitPeminjam()) && user.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("Borrower unit mismatch with requested unit peminjam");
+        // Validation: Borrower unit must match requester's origin unit
+        if (!user.getUnit().trim().equalsIgnoreCase(request.getUnitPeminjam().trim())) {
+            throw new org.springframework.security.access.AccessDeniedException("Borrower unit mismatch with requested unit peminjam");
         }
 
         // Validation: Aset unit must match requested unitTujuan
@@ -175,6 +175,10 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
              throw new IllegalStateException("Aset bukan milik unit Anda");
         }
 
+        if (request.getWaktuPeminjaman().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new IllegalArgumentException("Waktu peminjaman tidak boleh sebelum waktu sekarang");
+        }
+
         validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
 
         peminjaman.setAset(aset);
@@ -206,9 +210,9 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
 
         Aset aset = findAsetById(request.getIdAset());
 
-        // Validation: Borrower unit must match requester's origin unit (Relaxed for ADMIN)
+        // Validation: Borrower unit must match requester's origin unit
         if (!user.getUnit().trim().equalsIgnoreCase(request.getUnitPeminjam().trim()) && user.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("Borrower unit mismatch with requested unit peminjam");
+            throw new org.springframework.security.access.AccessDeniedException("Borrower unit mismatch with requested unit peminjam");
         }
 
         // Validation: Aset unit must match requested unitTujuan
@@ -219,6 +223,10 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         // Validation: Unit must be different between peminjam and asset owner
         if (request.getUnitPeminjam().trim().equalsIgnoreCase(request.getUnitTujuan().trim())) {
             throw new IllegalArgumentException("Lintas unit loan must be between different units");
+        }
+
+        if (request.getWaktuPeminjaman().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new IllegalArgumentException("Waktu peminjaman tidak boleh sebelum waktu sekarang");
         }
 
         validateLoanRequest(aset, request.getWaktuPeminjaman(), request.getWaktuPengembalian(), request.getQty());
@@ -242,7 +250,11 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!peminjaman.getPeminjam().getId().equals(userId) && user.getRole() != Role.ADMIN) {
+        boolean isOwner = peminjaman.getPeminjam().getId().equals(userId);
+        boolean isSuperadmin = user.getUnit().trim().equalsIgnoreCase("SUPERADMIN");
+        boolean isSameUnitAdmin = user.getRole() == Role.ADMIN && user.getUnit().equalsIgnoreCase(peminjaman.getPeminjam().getUnit());
+
+        if (!isOwner && !isSuperadmin && !isSameUnitAdmin) {
             throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk menghapus pengajuan ini");
         }
 
@@ -261,8 +273,11 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!peminjaman.getPeminjam().getId().equals(userId) && user.getRole() != Role.ADMIN) {
-            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk menghapus pengajuan ini");
+        boolean isOwner = peminjaman.getPeminjam().getId().equals(userId);
+        boolean isSuperadmin = user.getUnit().trim().equalsIgnoreCase("SUPERADMIN");
+
+        if (!isOwner && !isSuperadmin) {
+            throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki izin untuk menghapus pengajuan lintas unit ini");
         }
 
         if (peminjaman.getStatusPeminjaman() != PeminjamanAset.StatusPeminjaman.DIAJUKAN) {

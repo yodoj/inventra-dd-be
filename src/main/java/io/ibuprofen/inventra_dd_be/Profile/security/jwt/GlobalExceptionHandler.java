@@ -51,8 +51,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleIllegalStateException(IllegalStateException ex) {
-        return ResponseEntity.status(403) 
-                .body(BaseResponseDTO.error(403, ex.getMessage()));
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, "Bad Request: " + ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<BaseResponseDTO<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, "Bad Request: " + ex.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
