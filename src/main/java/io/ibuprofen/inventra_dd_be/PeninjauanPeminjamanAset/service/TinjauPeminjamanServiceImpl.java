@@ -16,6 +16,7 @@ import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restdto.response.Tin
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetSpecification;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -50,20 +53,48 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
     private UserRepository userRepository;
 
     @Override
-    public List<TinjauPeminjamanResponseDTO> getAll() {
+    public List<TinjauPeminjamanResponseDTO> getAll(
+            StatusPeminjaman statusPeminjaman, 
+            String unitTujuan, 
+            LocalDate tanggalPeminjaman, 
+            String kategoriAset) {
+        
         UserDetailsImpl userDetails = getCurrentUser();
-        List<PeminjamanAset> daftarPeminjaman;
+        boolean isAdmin = userDetails.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ADMIN"));
 
-        if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"))) {
-            daftarPeminjaman = peminjamanRepository.findAll();
-        } else {
-            daftarPeminjaman = peminjamanRepository.findAll().stream()
-                    .filter(peminjaman -> peminjaman.getUnitTujuan() != null && 
-                           peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit()))
-                    .collect(Collectors.toList());
+        if (kategoriAset != null && !kategoriAset.isEmpty()) {
+            List<String> validKategori = List.of("BARANG", "RUANG");
+            if (!validKategori.contains(kategoriAset.toUpperCase())) {
+                throw new IllegalArgumentException("Kategori '" + kategoriAset + "' tidak valid. Gunakan: BARANG atau RUANG");
+            }
         }
 
-        return daftarPeminjaman.stream()
+        if (unitTujuan != null && !unitTujuan.isEmpty()) {
+            List<String> legalUnits = List.of("KB-TK", "SD", "SMP", "SMA", "SUPERADMIN");
+            if (!legalUnits.contains(unitTujuan.toUpperCase())) {
+                throw new IllegalArgumentException("Unit '" + unitTujuan + "' tidak valid. Pilih unit yang benar");
+            }
+        }
+
+        if (!isAdmin && unitTujuan != null && !unitTujuan.isEmpty()) {
+            if (!unitTujuan.equalsIgnoreCase(userDetails.getUnit())) {
+                // Kalau beda, langsung lempar 403 Access Denied
+                throw new org.springframework.security.access.AccessDeniedException(
+                    "Anda tidak memiliki akses untuk meninjau unit ini. Tinjau sesuai unit Anda" 
+                );
+            }
+        } 
+
+        String unitTerpilih = isAdmin ? unitTujuan : userDetails.getUnit();
+        Specification<PeminjamanAset> kriteria = PeminjamanAsetSpecification.withFilters(
+            statusPeminjaman, 
+            unitTerpilih, 
+            tanggalPeminjaman, 
+            kategoriAset
+        );
+
+        return peminjamanRepository.findAll(kriteria).stream()
                 .map(peminjaman -> {
                     TinjauPeminjaman tinjau = tinjauRepository.findByPeminjaman_Id(peminjaman.getId()).orElse(null);
                     return mapToResponseDTO(peminjaman, tinjau);
@@ -260,6 +291,7 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
                    .alasan(tinjau.getAlasan())
                    .idPeninjau(tinjau.getPeninjau().getId())
                    .rolePeninjau(tinjau.getRolePeninjau())
+                   .namaPeninjau(tinjau.getPeninjau().getName())
                    .createdAt(tinjau.getCreatedAt())
                    .updatedAt(tinjau.getUpdatedAt());
         }

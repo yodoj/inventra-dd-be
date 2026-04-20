@@ -5,6 +5,7 @@ import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPem
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, UUID> {
+public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, UUID>, JpaSpecificationExecutor<PeminjamanAset> {
     Page<PeminjamanAset> findByPeminjamId(UUID peminjamId, Pageable pageable);
 
     @Query("SELECT p FROM PeminjamanAset p JOIN p.peminjam u JOIN p.aset a WHERE u.id = :peminjamId AND u.unit = a.unit ORDER BY p.waktuPengajuan DESC")
