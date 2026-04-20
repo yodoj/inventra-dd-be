@@ -25,8 +25,8 @@ public class SiswaFieldValidator implements ConstraintValidator<ValidateSiswaFie
                 addConstraintViolation(context, "NISN tidak boleh kosong untuk role SISWA");
                 return false;
             }
-            if (!user.getNisn().matches("^[0-9]+$")) {
-                addConstraintViolation(context, "NISN harus hanya berisi angka");
+            if (!user.getNisn().matches("^[0-9]{10}$")) {
+                addConstraintViolation(context, "NISN harus tepat 10 digit angka");
                 return false;
             }
             if (user.getKelas() == null || user.getKelas().isBlank()) {
