@@ -1,5 +1,6 @@
 package io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restcontroller;
 
+import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restdto.request.TinjauPeminjamanRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.restdto.response.TinjauPeminjamanResponseDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPeminjamanAset.service.TinjauPeminjamanService;
@@ -11,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,12 +23,32 @@ public class TinjauPeminjamanController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
-    public ResponseEntity<?> getAllTinjauPeminjaman() {
-        List<TinjauPeminjamanResponseDTO> result = tinjauPeminjamanService.getAll();
+    public ResponseEntity<?> getAllTinjauPeminjaman(
+            @RequestParam Map<String, String> allParams,
+            @RequestParam(value = "statusPeminjaman", required = false) String statusStr,
+            @RequestParam(value = "unitTujuan", required = false) String unit,
+            @RequestParam(value = "tanggalPeminjaman", required = false) 
+                @org.springframework.format.annotation.DateTimeFormat(pattern = "dd-MM-yyyy") java.time.LocalDate tanggal,
+            @RequestParam(value = "kategoriAset", required = false) String kategori) {
         
-        return ResponseEntity.ok(
-                BaseResponseDTO.ok(result, "Data peninjauan peminjaman aset berhasil diambil")
-        );
+        List<String> allowedParams = List.of("statusPeminjaman", "unitTujuan", "tanggalPeminjaman", "kategoriAset");
+        for (String paramName : allParams.keySet()) {
+            if (!allowedParams.contains(paramName)) {
+                throw new IllegalArgumentException("Parameter '" + paramName + "' tidak dikenali. Gunakan: " + allowedParams);
+            }
+        }
+
+        StatusPeminjaman status = null;
+        if (statusStr != null && !statusStr.isEmpty() && !statusStr.equalsIgnoreCase("Semua Status")) {
+            try {
+                status = StatusPeminjaman.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Status Peminjaman tidak valid.");
+            }
+        }
+
+        List<TinjauPeminjamanResponseDTO> result = tinjauPeminjamanService.getAll(status, unit, tanggal, kategori);     
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data peninjauan peminjaman aset berhasil diambil"));
     }
 
     @PostMapping("/{idpeminjaman}")

@@ -89,6 +89,9 @@ public class TinjauPeminjamanResponseDTO {
     @JsonProperty("role_peninjau")
     private Role rolePeninjau;
 
+    @JsonProperty("nama_peninjau")
+    private String namaPeninjau;
+
     @JsonProperty("createdAt")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

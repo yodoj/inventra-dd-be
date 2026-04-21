@@ -9,11 +9,11 @@ import java.util.UUID;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.restdto.request.*;
 
 public interface PeminjamanAsetService {
-    Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
-    Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, String unitTujuan, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, String unitTujuan, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable);
 
-    Page<PeminjamanAsetResponseDTO> getAllPeminjaman(String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
-    Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(String unit, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getAllPeminjaman(String unitTujuan, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable);
+    Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(String unitTujuan, io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable);
 
     PeminjamanAsetResponseDTO getPeminjamanById(UUID id);
 
