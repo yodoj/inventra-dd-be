@@ -216,7 +216,7 @@ public class PeminjamanAsetRestController {
         String cat = kategori.trim().toLowerCase();
         if (cat.equals("barang")) {
             return List.of(io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_TIDAK_HABIS_PAKAI);
-        } else if (cat.equals("ruang")) {
+        } else if (cat.equals("ruangan")) {
             return List.of(io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.RUANG_KELAS, io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.RUANG_NON_KELAS);
         } else {
             throw new IllegalArgumentException("Value parameter tidak valid.");

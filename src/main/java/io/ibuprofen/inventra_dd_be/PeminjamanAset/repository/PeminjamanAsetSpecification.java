@@ -43,7 +43,7 @@ public class PeminjamanAsetSpecification {
                 Join<PeminjamanAset, Aset> asetJoin = root.join("aset");
                 if (kategoriGroup.equalsIgnoreCase("BARANG")) {
                     predicates.add(criteriaBuilder.equal(asetJoin.get("kategoriAset"), KategoriAset.BARANG_TIDAK_HABIS_PAKAI));
-                } else if (kategoriGroup.equalsIgnoreCase("RUANG")) {
+                } else if (kategoriGroup.equalsIgnoreCase("RUANGAN")) {
                     predicates.add(asetJoin.get("kategoriAset").in(KategoriAset.RUANG_KELAS, KategoriAset.RUANG_NON_KELAS));
                 }
             }

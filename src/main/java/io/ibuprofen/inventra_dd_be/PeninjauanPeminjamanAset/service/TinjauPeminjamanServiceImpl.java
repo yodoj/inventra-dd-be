@@ -64,7 +64,7 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
             .anyMatch(a -> a.getAuthority().equals("ADMIN"));
 
         if (kategoriAset != null && !kategoriAset.isEmpty()) {
-            List<String> validKategori = List.of("BARANG", "RUANG");
+            List<String> validKategori = List.of("BARANG", "RUANGAN");
             if (!validKategori.contains(kategoriAset.toUpperCase())) {
                 throw new IllegalArgumentException("Kategori '" + kategoriAset + "' tidak valid. Gunakan: BARANG atau RUANG");
             }
