@@ -25,7 +25,7 @@ public class TinjauPeminjamanController {
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'ADMIN')")
     public ResponseEntity<?> getAllTinjauPeminjaman(
             @RequestParam Map<String, String> allParams,
-            @RequestParam(value = "statusPeminjaman", required = false) StatusPeminjaman status,
+            @RequestParam(value = "statusPeminjaman", required = false) String statusStr,
             @RequestParam(value = "unitTujuan", required = false) String unit,
             @RequestParam(value = "tanggalPeminjaman", required = false) 
                 @org.springframework.format.annotation.DateTimeFormat(pattern = "dd-MM-yyyy") java.time.LocalDate tanggal,
@@ -35,6 +35,15 @@ public class TinjauPeminjamanController {
         for (String paramName : allParams.keySet()) {
             if (!allowedParams.contains(paramName)) {
                 throw new IllegalArgumentException("Parameter '" + paramName + "' tidak dikenali. Gunakan: " + allowedParams);
+            }
+        }
+
+        StatusPeminjaman status = null;
+        if (statusStr != null && !statusStr.isEmpty() && !statusStr.equalsIgnoreCase("Semua Status")) {
+            try {
+                status = StatusPeminjaman.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Status Peminjaman tidak valid.");
             }
         }
 

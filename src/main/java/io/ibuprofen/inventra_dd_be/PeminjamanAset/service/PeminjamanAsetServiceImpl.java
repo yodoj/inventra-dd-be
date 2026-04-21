@@ -41,26 +41,26 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
     private UserRepository userRepository;
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndUnitSendiriFiltered(userId, unit, status, search, pageable);
+    public Page<PeminjamanAsetResponseDTO> getMyPeminjaman(UUID userId, String unitTujuan, PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndUnitSendiriFiltered(userId, unitTujuan, statusPeminjaman, kategoriAset, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndLintasUnitFiltered(userId, unit, status, search, pageable);
+    public Page<PeminjamanAsetResponseDTO> getMyPeminjamanLintasUnit(UUID userId, String unitTujuan, PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findByPeminjamIdAndLintasUnitFiltered(userId, unitTujuan, statusPeminjaman, kategoriAset, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getAllPeminjaman(String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllUnitSendiriFiltered(unit, status, search, pageable);
+    public Page<PeminjamanAsetResponseDTO> getAllPeminjaman(String unitTujuan, PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllUnitSendiriFiltered(unitTujuan, statusPeminjaman, kategoriAset, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(String unit, PeminjamanAset.StatusPeminjaman status, String search, Pageable pageable) {
-        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllLintasUnitFiltered(unit, status, search, pageable);
+    public Page<PeminjamanAsetResponseDTO> getAllPeminjamanLintasUnit(String unitTujuan, PeminjamanAset.StatusPeminjaman statusPeminjaman, java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset, String search, Pageable pageable) {
+        Page<PeminjamanAset> peminjamanPage = peminjamanAsetRepository.findAllLintasUnitFiltered(unitTujuan, statusPeminjaman, kategoriAset, search, pageable);
         return peminjamanPage.map(this::convertToResponseDTO);
     }
 

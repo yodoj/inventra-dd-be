@@ -26,12 +26,14 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
            "WHERE u.id = :peminjamId AND u.unit = a.unit " +
            "AND (:unit IS NULL OR LOWER(TRIM(a.unit)) = :unit) " +
            "AND (:status IS NULL OR p.statusPeminjaman = :status) " +
-           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search) " +
+           "AND (:kategoriAset IS NULL OR a.kategoriAset IN :kategoriAset) " +
+           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search OR EXISTS (SELECT 1 FROM AsetBarang ab WHERE ab.id = a.id AND LOWER(ab.merkAset) LIKE :search)) " +
            "ORDER BY p.waktuPengajuan DESC")
     Page<PeminjamanAset> findByPeminjamIdAndUnitSendiriFiltered(
             @Param("peminjamId") UUID peminjamId,
             @Param("unit") String unit,
             @Param("status") StatusPeminjaman status,
+            @Param("kategoriAset") java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset,
             @Param("search") String search,
             Pageable pageable);
 
@@ -39,12 +41,14 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
            "WHERE u.id = :peminjamId AND u.unit <> a.unit " +
            "AND (:unit IS NULL OR LOWER(TRIM(a.unit)) = :unit) " +
            "AND (:status IS NULL OR p.statusPeminjaman = :status) " +
-           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search) " +
+           "AND (:kategoriAset IS NULL OR a.kategoriAset IN :kategoriAset) " +
+           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search OR EXISTS (SELECT 1 FROM AsetBarang ab WHERE ab.id = a.id AND LOWER(ab.merkAset) LIKE :search)) " +
            "ORDER BY p.waktuPengajuan DESC")
     Page<PeminjamanAset> findByPeminjamIdAndLintasUnitFiltered(
             @Param("peminjamId") UUID peminjamId,
             @Param("unit") String unit,
             @Param("status") StatusPeminjaman status,
+            @Param("kategoriAset") java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset,
             @Param("search") String search,
             Pageable pageable);
 
@@ -59,11 +63,13 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
            "AND u.role IN (io.ibuprofen.inventra_dd_be.Profile.model.Role.GURU, io.ibuprofen.inventra_dd_be.Profile.model.Role.SISWA) " +
            "AND (:unit IS NULL OR LOWER(TRIM(a.unit)) = :unit) " +
            "AND (:status IS NULL OR p.statusPeminjaman = :status) " +
-           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search) " +
+           "AND (:kategoriAset IS NULL OR a.kategoriAset IN :kategoriAset) " +
+           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search OR EXISTS (SELECT 1 FROM AsetBarang ab WHERE ab.id = a.id AND LOWER(ab.merkAset) LIKE :search)) " +
            "ORDER BY p.waktuPengajuan DESC")
     Page<PeminjamanAset> findAllUnitSendiriFiltered(
             @Param("unit") String unit,
             @Param("status") StatusPeminjaman status,
+            @Param("kategoriAset") java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset,
             @Param("search") String search,
             Pageable pageable);
 
@@ -71,11 +77,13 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
            "WHERE u.unit <> a.unit " +
            "AND (:unit IS NULL OR LOWER(TRIM(a.unit)) = :unit) " +
            "AND (:status IS NULL OR p.statusPeminjaman = :status) " +
-           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search) " +
+           "AND (:kategoriAset IS NULL OR a.kategoriAset IN :kategoriAset) " +
+           "AND (:search IS NULL OR LOWER(a.namaAset) LIKE :search OR LOWER(a.kodeAset) LIKE :search OR EXISTS (SELECT 1 FROM AsetBarang ab WHERE ab.id = a.id AND LOWER(ab.merkAset) LIKE :search)) " +
            "ORDER BY p.waktuPengajuan DESC")
     Page<PeminjamanAset> findAllLintasUnitFiltered(
             @Param("unit") String unit,
             @Param("status") StatusPeminjaman status,
+            @Param("kategoriAset") java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset,
             @Param("search") String search,
             Pageable pageable);
 }
