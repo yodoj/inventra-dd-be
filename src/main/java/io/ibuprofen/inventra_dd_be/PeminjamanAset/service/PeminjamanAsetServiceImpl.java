@@ -306,17 +306,20 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
             throw new IllegalArgumentException("Returning time must be after borrowing time");
         }
 
-        if (aset.getStatusAset() != StatusAset.TERSEDIA) {
-            throw new IllegalArgumentException("Asset is currently not available for loan");
-        }
-
         if (aset instanceof AsetBarang) {
             AsetBarang ab = (AsetBarang) aset;
+            // Purely check quantity for Goods
             if (qty > ab.getQtyTersedia()) {
                 throw new IllegalArgumentException("Requested quantity exceeds available stock");
             }
-        } else if (qty > 1) {
-            throw new IllegalArgumentException("Rooms can only be borrowed with quantity 1");
+        } else if (aset instanceof AsetRuangan) {
+            // Rooms still rely on binary status
+            if (aset.getStatusAset() != StatusAset.TERSEDIA) {
+                throw new IllegalArgumentException("Room is currently not available for loan");
+            }
+            if (qty > 1) {
+                throw new IllegalArgumentException("Rooms can only be borrowed with quantity 1");
+            }
         }
     }
 

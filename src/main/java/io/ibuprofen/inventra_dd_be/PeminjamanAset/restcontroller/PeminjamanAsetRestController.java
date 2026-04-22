@@ -123,7 +123,7 @@ public class PeminjamanAsetRestController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SISWA', 'GURU')")
     public ResponseEntity<?> createPeminjaman(@Valid @RequestBody CreatePeminjamanRequestDTO request) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         PeminjamanAsetResponseDTO result = peminjamanAsetService.createPeminjaman(request, userDetails.getId());
