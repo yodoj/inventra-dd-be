@@ -79,7 +79,6 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
 
         if (!isAdmin && unitTujuan != null && !unitTujuan.isEmpty()) {
             if (!unitTujuan.equalsIgnoreCase(userDetails.getUnit())) {
-                // Kalau beda, langsung lempar 403 Access Denied
                 throw new org.springframework.security.access.AccessDeniedException(
                     "Anda tidak memiliki akses untuk meninjau unit ini. Tinjau sesuai unit Anda" 
                 );
@@ -129,7 +128,7 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         peminjaman.setStatusPeminjaman(request.getStatusPeminjaman());
         
         if (request.getStatusPeminjaman() == PeminjamanAset.StatusPeminjaman.DISETUJUI) {
-            eksekusiPeminjamanAset(peminjaman);
+            validateAvailabilityForPeriod(peminjaman);
         }
 
         TinjauPeminjaman peninjauanBaru = TinjauPeminjaman.builder()
@@ -177,6 +176,10 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         TinjauPeminjaman tinjauLama = tinjauRepository.findByPeminjaman_Id(idPeminjaman)
                 .orElseThrow(() -> new IllegalStateException("Data peninjauan belum ada"));
 
+        if (java.time.LocalDateTime.now().isAfter(peminjaman.getWaktuPeminjaman())) {
+            throw new IllegalStateException("Peninjauan tidak dapat diubah karena waktu peminjaman sudah dimulai atau terlewati.");
+        }
+
         boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
         if (!isAdmin && !peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit())) {
             throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses untuk mengubah peninjauan unit lain");
@@ -186,12 +189,8 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         StatusPeminjaman statusBaru = request.getStatusPeminjaman();
 
         if (statusLama != statusBaru) {
-            if (statusLama == StatusPeminjaman.DISETUJUI && statusBaru == StatusPeminjaman.DITOLAK) {
-                batalkanEksekusiPeminjamanAset(peminjaman);
-            } 
-
-            else if (statusLama == StatusPeminjaman.DITOLAK && statusBaru == StatusPeminjaman.DISETUJUI) {
-                eksekusiPeminjamanAset(peminjaman);
+            if (statusLama == StatusPeminjaman.DITOLAK && statusBaru == StatusPeminjaman.DISETUJUI) {
+                validateAvailabilityForPeriod(peminjaman);
             }
         }
 
@@ -209,45 +208,35 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         return mapToResponseDTO(peminjaman, savedTinjau);
     }
 
-    private void eksekusiPeminjamanAset(PeminjamanAset peminjaman) {
+    private void validateAvailabilityForPeriod(PeminjamanAset peminjaman) {
         UUID asetId = peminjaman.getAset().getId();
-
-        Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
-        if (barangOpt.isPresent()) {
-            AsetBarang barang = barangOpt.get();
-
-            int qtyBaru = barang.getQtyTersedia() - peminjaman.getQty();
-            if (qtyBaru < 0) {
-                throw new IllegalStateException("Stok tidak mencukupi untuk disetujui");
-            }
-            barang.setQtyTersedia(qtyBaru);
-            barang.setQtyDipinjam(barang.getQtyDipinjam() + peminjaman.getQty());
-
-            asetBarangRepository.save(barang);
-            return;
-        }
-
-        AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
-                .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan"));
-
-        ruangan.setStatusAset(StatusAset.SEDANG_DIPINJAM);
-        asetRuanganRepository.save(ruangan);
-    }
-
-    private void batalkanEksekusiPeminjamanAset(PeminjamanAset peminjaman) {
-        UUID asetId = peminjaman.getAset().getId(); 
-        Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
+        int requestedQty = peminjaman.getQty();
         
+        Integer overlapQty = peminjamanRepository.countOverlappingLoansExcludeId(
+            asetId, 
+            peminjaman.getId(),
+            peminjaman.getWaktuPeminjaman(), 
+            peminjaman.getWaktuPengembalian()
+        );
+        if (overlapQty == null) overlapQty = 0;
+
+        Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
         if (barangOpt.isPresent()) {
             AsetBarang barang = barangOpt.get();
-            barang.setQtyTersedia(barang.getQtyTersedia() + peminjaman.getQty()); 
-            barang.setQtyDipinjam(barang.getQtyDipinjam() - peminjaman.getQty());
-            asetBarangRepository.save(barang);
+            int totalPhysicalCapacity = barang.getQtyAset() - barang.getQtyRusak() - barang.getQtyPerbaikan() - barang.getQtyDimusnahkan();
+            int currentAvailable = totalPhysicalCapacity - overlapQty;
+
+            if (currentAvailable < requestedQty) {
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy | HH:mm");
+                String wktMulai = peminjaman.getWaktuPeminjaman().format(formatter);
+                String wktSelesai = peminjaman.getWaktuPengembalian().format(formatter);
+                throw new IllegalStateException("Stok tidak mencukupi untuk rentang waktu " 
+                    + wktMulai + " s/d " + wktSelesai);
+            }
         } else {
-            AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
-                    .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan")); 
-            ruangan.setStatusAset(StatusAset.TERSEDIA);
-            asetRuanganRepository.save(ruangan); 
+            if (overlapQty > 0) {
+                throw new IllegalStateException("Ruangan sudah diajukan peminjamannya oleh orang lain untuk rentang waktu tersebut.");
+            }
         }
     }
 

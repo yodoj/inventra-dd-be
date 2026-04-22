@@ -303,20 +303,26 @@ public class PeminjamanAsetServiceImpl implements PeminjamanAsetService {
         }
 
         if (end.isBefore(start)) {
-            throw new IllegalArgumentException("Returning time must be after borrowing time");
-        }
-
-        if (aset.getStatusAset() != StatusAset.TERSEDIA) {
-            throw new IllegalArgumentException("Asset is currently not available for loan");
+            throw new IllegalArgumentException("Waktu pengembalian harus setelah waktu peminjaman");
         }
 
         if (aset instanceof AsetBarang) {
             AsetBarang ab = (AsetBarang) aset;
-            if (qty > ab.getQtyTersedia()) {
-                throw new IllegalArgumentException("Requested quantity exceeds available stock");
+            // Physical capacity check (Total - Damaged/Repair/Destroyed)
+            // We ignore current overlapping loans here to allow submission; conflicts are caught by Admin during approval.
+            int physicalCapacity = ab.getQtyAset() - ab.getQtyRusak() - ab.getQtyPerbaikan() - ab.getQtyDimusnahkan();
+            if (qty > physicalCapacity) {
+                throw new IllegalArgumentException("Jumlah diminta (" + qty + ") melebihi kapasitas fisik tersedia (" + physicalCapacity + ")");
             }
-        } else if (qty > 1) {
-            throw new IllegalArgumentException("Rooms can only be borrowed with quantity 1");
+        } else if (aset instanceof AsetRuangan) {
+            // Rooms: Only check if NOT in a permanent unusable status (Repair)
+            // Status SEDANG_DIPINJAM is ignored during submission to allow queueing; Admin handles overlaps.
+            if (aset.getStatusAset() == StatusAset.RUSAK || aset.getStatusAset() == StatusAset.DIMUSNAHKAN) {
+                throw new IllegalArgumentException("Ruangan sedang tidak dapat diajukan karena kondisi fisik");
+            }
+            if (qty > 1) {
+                throw new IllegalArgumentException("Ruangan hanya dapat dipinjam dengan kuantitas 1");
+            }
         }
     }
 

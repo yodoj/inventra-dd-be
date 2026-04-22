@@ -86,4 +86,24 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
             @Param("kategoriAset") java.util.List<io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset> kategoriAset,
             @Param("search") String search,
             Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(p.qty), 0) FROM PeminjamanAset p " +
+           "WHERE p.aset.id = :asetId " +
+           "AND p.statusPeminjaman = 'DISETUJUI' " +
+           "AND p.waktuPeminjaman < :waktuEnd AND p.waktuPengembalian > :waktuStart")
+    Integer countOverlappingLoans(
+            @Param("asetId") UUID asetId,
+            @Param("waktuStart") java.time.LocalDateTime waktuStart,
+            @Param("waktuEnd") java.time.LocalDateTime waktuEnd);
+
+    @Query("SELECT COALESCE(SUM(p.qty), 0) FROM PeminjamanAset p " +
+           "WHERE p.aset.id = :asetId " +
+           "AND p.id <> :excludeId " +
+           "AND p.statusPeminjaman = 'DISETUJUI' " +
+           "AND p.waktuPeminjaman < :waktuEnd AND p.waktuPengembalian > :waktuStart")
+    Integer countOverlappingLoansExcludeId(
+            @Param("asetId") UUID asetId,
+            @Param("excludeId") UUID excludeId,
+            @Param("waktuStart") java.time.LocalDateTime waktuStart,
+            @Param("waktuEnd") java.time.LocalDateTime waktuEnd);
 }
