@@ -27,14 +27,20 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<BaseResponseDTO<Void>> handleMessageNotReadableException(HttpMessageNotReadableException ex) {
-        String message = "JSON parse error: Data format tidak sesuai atau ada field yang salah";
+    public ResponseEntity<BaseResponseDTO<Void>> handleMessageNotReadableException(
+            HttpMessageNotReadableException ex) {
 
-        // Log the actual cause for debugging if needed
-        // logger.error("Parse error: ", ex.getMessage());
+        String message = ex.getMessage();
 
-        return ResponseEntity.badRequest()
-                .body(BaseResponseDTO.error(400, message));
+        // khusus enum Status
+        if (message != null && message.contains("Status")) {
+            return ResponseEntity.status(400)
+                    .body(BaseResponseDTO.error(400, "Status tersebut tidak ada"));
+        }
+
+        // error JSON umum
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, "JSON parse error: Data format tidak sesuai atau ada field yang salah"));
     }
 
     @ExceptionHandler(NoSuchElementException.class)
@@ -45,8 +51,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<BaseResponseDTO<Void>> handleIllegalStateException(IllegalStateException ex) {
-        return ResponseEntity.status(403) 
-                .body(BaseResponseDTO.error(403, ex.getMessage()));
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<BaseResponseDTO<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(400)
+                .body(BaseResponseDTO.error(400, "Bad Request: " + ex.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -60,6 +72,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(500)
                 .body(BaseResponseDTO.error(500, "Internal Server Error: " + ex.getMessage()));
     }
-
 
 }

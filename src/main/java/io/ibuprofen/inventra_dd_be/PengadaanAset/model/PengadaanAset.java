@@ -63,7 +63,9 @@ public class PengadaanAset {
     @Column(name = "unit", columnDefinition = "VARCHAR(255)")
     private String unit; 
 
-    // Catatan alasan dari peninjau
+    @Column
+    private String rolePengaju; 
+
     @Column(name = "review_pengajuan", columnDefinition = "TEXT")
     private String reviewPengajuan;
 

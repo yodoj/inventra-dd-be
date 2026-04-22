@@ -58,7 +58,7 @@ public class AuthRestController {
         } catch (AuthenticationException e) {
             System.err.println(
                     "Authentication failed for email: " + loginRequest.getEmail() + " | Error: " + e.getMessage());
-            return ResponseEntity.status(401).body(BaseResponseDTO.error(401, "Error: Invalid email or password"));
+            return ResponseEntity.status(401).body(BaseResponseDTO.error(401, "Invalid email or password"));
         } catch (Exception e) {
             System.err.println("Unexpected error during login for email: " + loginRequest.getEmail() + " | Error: "
                     + e.getMessage());

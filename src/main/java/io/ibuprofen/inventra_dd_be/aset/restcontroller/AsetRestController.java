@@ -29,9 +29,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
-
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -170,9 +167,23 @@ public class AsetRestController {
         return ResponseEntity.ok(BaseResponseDTO.ok(null, "Aset ruangan deleted successfully"));
     }
 
+    @GetMapping("/borrowable")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SARPRAS', 'YAYASAN', 'GURU', 'SISWA', 'KEPSEK')")
+    public ResponseEntity<?> getBorrowableAssets(@RequestParam String unit) {
+        if (unit != null && !unit.isEmpty() && !isValidUnit(unit)) {
+            return ResponseEntity.badRequest()
+                    .body(BaseResponseDTO.error(400, "Error: Parameter unit tidak valid"));
+        }
+        return ResponseEntity.ok(BaseResponseDTO.ok(asetService.getBorrowableAssets(unit),
+                "Borrowable assets retrieved successfully"));
+    }
+
     private boolean isValidUnit(String unit) {
-        List<String> validUnits = Arrays.asList("KB-TK", "SD", "SMP", "SMA");
-        return validUnits.contains(unit);
+        if (unit == null) return false;
+        List<String> validUnits = Arrays.asList(
+            "KB-TK", "SD", "SMP", "SMA", "GLOBAL", "PUSAT", "ADMIN", "YAYASAN"
+        );
+        return validUnits.contains(unit.toUpperCase());
     }
 
     private boolean isValidStatus(String status) {

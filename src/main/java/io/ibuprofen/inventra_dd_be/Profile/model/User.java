@@ -41,10 +41,9 @@ public class User {
     @NotBlank
     private String unit;
 
-    @NotBlank
     private String phoneNumber;
 
-    @Pattern(regexp = "^[0-9]+$", message = "NISN harus hanya berisi angka")
+    @Pattern(regexp = "^[0-9]{10}$", message = "NISN harus tepat 10 digit angka")
     private String nisn;
 
     private String kelas;

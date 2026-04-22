@@ -21,9 +21,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import io.ibuprofen.inventra_dd_be.Aset.restdto.response.BorrowableAsetResponseDTO;
 
 @Service
 public class AsetServiceImpl implements AsetService {
@@ -33,6 +36,9 @@ public class AsetServiceImpl implements AsetService {
 
     @Autowired
     private AsetRuanganRepository asetRuanganRepository;
+
+    @Autowired
+    private io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetRepository peminjamanAsetRepository;
 
     @Override
     public Page<AsetBarangResponseDTO> getAsetBarang(String unit, String kategori, String status, String search,
@@ -100,6 +106,13 @@ public class AsetServiceImpl implements AsetService {
         asetBarang.setMerkAset(request.getMerkAset());
         asetBarang.setQtyAset(request.getQtyAset());
         asetBarang.setLokasiAset(request.getLokasiAset());
+
+        // Set qty status breakdown: All quantity goes to 'Tersedia' on creation
+        asetBarang.setQtyTersedia(request.getQtyAset());
+        asetBarang.setQtyRusak(0);
+        asetBarang.setQtyPerbaikan(0);
+        asetBarang.setQtyDimusnahkan(0);
+        asetBarang.setQtyDipinjam(0);
 
         if (roles.contains("YAYASAN") || roles.contains("ROLE_YAYASAN") || roles.contains("ADMIN")
                 || roles.contains("ROLE_ADMIN")) {
@@ -192,6 +205,25 @@ public class AsetServiceImpl implements AsetService {
         asetBarang.setMerkAset(request.getMerkAset());
         asetBarang.setQtyAset(request.getQtyAset());
         asetBarang.setLokasiAset(request.getLokasiAset());
+
+        // Validate qty sum alignment
+        int totalQtyDetails = (request.getQtyTersedia() != null ? request.getQtyTersedia() : 0) +
+                (request.getQtyRusak() != null ? request.getQtyRusak() : 0) +
+                (request.getQtyPerbaikan() != null ? request.getQtyPerbaikan() : 0) +
+                (request.getQtyDimusnahkan() != null ? request.getQtyDimusnahkan() : 0) +
+                (request.getQtyDipinjam() != null ? request.getQtyDipinjam() : 0);
+
+        if (totalQtyDetails != request.getQtyAset()) {
+            throw new IllegalArgumentException(
+                "Jumlah rincian ketersediaan (" + totalQtyDetails + ") harus sama dengan total kuantitas aset (" + request.getQtyAset() + ")");
+        }
+
+        // Update qty status breakdown
+        asetBarang.setQtyTersedia(request.getQtyTersedia() != null ? request.getQtyTersedia() : 0);
+        asetBarang.setQtyRusak(request.getQtyRusak() != null ? request.getQtyRusak() : 0);
+        asetBarang.setQtyPerbaikan(request.getQtyPerbaikan() != null ? request.getQtyPerbaikan() : 0);
+        asetBarang.setQtyDimusnahkan(request.getQtyDimusnahkan() != null ? request.getQtyDimusnahkan() : 0);
+        asetBarang.setQtyDipinjam(request.getQtyDipinjam() != null ? request.getQtyDipinjam() : 0);
 
         if (roles.contains("YAYASAN") || roles.contains("ROLE_YAYASAN") || roles.contains("ADMIN")
                 || roles.contains("ROLE_ADMIN")) {
@@ -357,6 +389,14 @@ public class AsetServiceImpl implements AsetService {
     }
 
     private AsetBarangResponseDTO mapToAsetBarangDTO(AsetBarang aset) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        Integer dipinjamSkrg = peminjamanAsetRepository.countOverlappingLoans(aset.getId(), now, now);
+        if (dipinjamSkrg == null) dipinjamSkrg = 0;
+
+        // Dynamic calculation based on physical capacity
+        int totalKapasitas = aset.getQtyAset() - aset.getQtyRusak() - aset.getQtyPerbaikan() - aset.getQtyDimusnahkan();
+        int tersediaSkrg = Math.max(0, totalKapasitas - dipinjamSkrg);
+
         return AsetBarangResponseDTO.builder()
                 .idAset(aset.getId())
                 .kodeAset(aset.getKodeAset())
@@ -367,21 +407,77 @@ public class AsetServiceImpl implements AsetService {
                 .lokasiAset(aset.getLokasiAset())
                 .kategoriAset(aset.getKategoriAset())
                 .statusAset(aset.getStatusAset())
+                .qtyTersedia(tersediaSkrg)
+                .qtyRusak(aset.getQtyRusak())
+                .qtyPerbaikan(aset.getQtyPerbaikan())
+                .qtyDimusnahkan(aset.getQtyDimusnahkan())
+                .qtyDipinjam(dipinjamSkrg)
                 .keteranganAset(aset.getKeteranganAset())
                 .unit(aset.getUnit())
                 .build();
     }
 
     private AsetRuanganResponseDTO mapToAsetRuanganDTO(AsetRuangan aset) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        Integer dipinjamSkrg = peminjamanAsetRepository.countOverlappingLoans(aset.getId(), now, now);
+        
+        StatusAset statusDinamis = aset.getStatusAset();
+        if (statusDinamis == StatusAset.TERSEDIA && dipinjamSkrg != null && dipinjamSkrg > 0) {
+            statusDinamis = StatusAset.SEDANG_DIPINJAM;
+        }
+
         return AsetRuanganResponseDTO.builder()
                 .idAset(aset.getId())
                 .kodeAset(aset.getKodeAset())
                 .gambarUrlAset(aset.getGambarUrlAset())
                 .namaAset(aset.getNamaAset())
                 .kategoriAset(aset.getKategoriAset())
-                .statusAset(aset.getStatusAset())
+                .statusAset(statusDinamis)
                 .keteranganAset(aset.getKeteranganAset())
                 .unit(aset.getUnit())
                 .build();
+    }
+
+    @Override
+    public List<BorrowableAsetResponseDTO> getBorrowableAssets(String unit) {
+        List<BorrowableAsetResponseDTO> result = new ArrayList<>();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        // Add goods with dynamic stock calculation
+        List<AsetBarang> barangList = asetBarangRepository.findBorrowableInUnit(unit);
+        for (AsetBarang b : barangList) {
+            Integer dipinjamSkrg = peminjamanAsetRepository.countOverlappingLoans(b.getId(), now, now);
+            if (dipinjamSkrg == null) dipinjamSkrg = 0;
+            
+            int totalKapasitas = b.getQtyAset() - b.getQtyRusak() - b.getQtyPerbaikan() - b.getQtyDimusnahkan();
+            int tersediaSkrg = Math.max(0, totalKapasitas - dipinjamSkrg);
+
+            result.add(BorrowableAsetResponseDTO.builder()
+                    .idAset(b.getId())
+                    .kodeAset(b.getKodeAset())
+                    .namaAset(b.getNamaAset())
+                    .merkAset(b.getMerkAset())
+                    .kategoriAset(b.getKategoriAset())
+                    .qtyTersedia(tersediaSkrg)
+                    .build());
+        }
+
+        // Add rooms with dynamic status check
+        List<AsetRuangan> ruanganList = asetRuanganRepository.findBorrowableInUnit(unit);
+        for (AsetRuangan r : ruanganList) {
+            Integer dipinjamSkrg = peminjamanAsetRepository.countOverlappingLoans(r.getId(), now, now);
+            int tersediaSkrg = (dipinjamSkrg != null && dipinjamSkrg > 0) ? 0 : 1;
+
+            result.add(BorrowableAsetResponseDTO.builder()
+                    .idAset(r.getId())
+                    .kodeAset(r.getKodeAset())
+                    .namaAset(r.getNamaAset())
+                    .merkAset(null)
+                    .kategoriAset(r.getKategoriAset())
+                    .qtyTersedia(tersediaSkrg)
+                    .build());
+        }
+
+        return result;
     }
 }
