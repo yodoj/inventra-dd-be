@@ -129,6 +129,7 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         peminjaman.setStatusPeminjaman(request.getStatusPeminjaman());
         
         if (request.getStatusPeminjaman() == PeminjamanAset.StatusPeminjaman.DISETUJUI) {
+            validateAvailabilityForPeriod(peminjaman);
             eksekusiPeminjamanAset(peminjaman);
         }
 
@@ -177,6 +178,11 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         TinjauPeminjaman tinjauLama = tinjauRepository.findByPeminjaman_Id(idPeminjaman)
                 .orElseThrow(() -> new IllegalStateException("Data peninjauan belum ada"));
 
+        // Validation: Cannot update once the loan has started
+        if (java.time.LocalDateTime.now().isAfter(peminjaman.getWaktuPeminjaman())) {
+            throw new IllegalStateException("Peninjauan tidak dapat diubah karena waktu peminjaman sudah dimulai atau terlewati.");
+        }
+
         boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
         if (!isAdmin && !peminjaman.getUnitTujuan().equalsIgnoreCase(userDetails.getUnit())) {
             throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses untuk mengubah peninjauan unit lain");
@@ -189,8 +195,8 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
             if (statusLama == StatusPeminjaman.DISETUJUI && statusBaru == StatusPeminjaman.DITOLAK) {
                 batalkanEksekusiPeminjamanAset(peminjaman);
             } 
-
             else if (statusLama == StatusPeminjaman.DITOLAK && statusBaru == StatusPeminjaman.DISETUJUI) {
+                validateAvailabilityForPeriod(peminjaman);
                 eksekusiPeminjamanAset(peminjaman);
             }
         }
@@ -209,46 +215,47 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
         return mapToResponseDTO(peminjaman, savedTinjau);
     }
 
-    private void eksekusiPeminjamanAset(PeminjamanAset peminjaman) {
+    private void validateAvailabilityForPeriod(PeminjamanAset peminjaman) {
         UUID asetId = peminjaman.getAset().getId();
+        int requestedQty = peminjaman.getQty();
+        
+        // Count overlapping approved loans, excluding the current one being reviewed
+        Integer overlapQty = peminjamanRepository.countOverlappingLoansExcludeId(
+            asetId, 
+            peminjaman.getId(),
+            peminjaman.getWaktuPeminjaman(), 
+            peminjaman.getWaktuPengembalian()
+        );
+        if (overlapQty == null) overlapQty = 0;
 
         Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
         if (barangOpt.isPresent()) {
             AsetBarang barang = barangOpt.get();
+            // Capacity is based on initial physical stock minus broken/repair/destroyed
+            int totalPhysicalCapacity = barang.getQtyAset() - barang.getQtyRusak() - barang.getQtyPerbaikan() - barang.getQtyDimusnahkan();
+            int currentAvailable = totalPhysicalCapacity - overlapQty;
 
-            int qtyBaru = barang.getQtyTersedia() - peminjaman.getQty();
-            if (qtyBaru < 0) {
-                throw new IllegalStateException("Stok tidak mencukupi untuk disetujui");
+            if (currentAvailable < requestedQty) {
+                throw new IllegalStateException("Stok tidak mencukupi untuk rentang waktu tersebut (" 
+                    + peminjaman.getWaktuPeminjaman() + " s/d " + peminjaman.getWaktuPengembalian() 
+                    + "). Sisa Tersedia: " + currentAvailable);
             }
-            barang.setQtyTersedia(qtyBaru);
-            barang.setQtyDipinjam(barang.getQtyDipinjam() + peminjaman.getQty());
-
-            asetBarangRepository.save(barang);
-            return;
+        } else {
+            // Room validation: Binary availability
+            if (overlapQty > 0) {
+                throw new IllegalStateException("Ruangan sudah dipesan oleh orang lain untuk rentang waktu tersebut.");
+            }
         }
+    }
 
-        AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
-                .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan"));
-
-        ruangan.setStatusAset(StatusAset.SEDANG_DIPINJAM);
-        asetRuanganRepository.save(ruangan);
+    private void eksekusiPeminjamanAset(PeminjamanAset peminjaman) {
+        // Dynamic Stock Model: We no longer modify physical Database columns like qtyTersedia.
+        // We only update status flags if necessary (like marking a room unusable globally, but for now we follow dynamic logic).
+        // For Rooms, we used to set StatusAset.SEDANG_DIPINJAM, but we now do this dynamically in AsetServiceImpl.
     }
 
     private void batalkanEksekusiPeminjamanAset(PeminjamanAset peminjaman) {
-        UUID asetId = peminjaman.getAset().getId(); 
-        Optional<AsetBarang> barangOpt = asetBarangRepository.findById(asetId);
-        
-        if (barangOpt.isPresent()) {
-            AsetBarang barang = barangOpt.get();
-            barang.setQtyTersedia(barang.getQtyTersedia() + peminjaman.getQty()); 
-            barang.setQtyDipinjam(barang.getQtyDipinjam() - peminjaman.getQty());
-            asetBarangRepository.save(barang);
-        } else {
-            AsetRuangan ruangan = asetRuanganRepository.findById(asetId)
-                    .orElseThrow(() -> new IllegalStateException("Aset tidak ditemukan")); 
-            ruangan.setStatusAset(StatusAset.TERSEDIA);
-            asetRuanganRepository.save(ruangan); 
-        }
+        // Dynamic Stock Model: No physical restoration needed as no physical subtraction was made during approval.
     }
 
     private UserDetailsImpl getCurrentUser() {
