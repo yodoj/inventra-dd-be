@@ -34,6 +34,7 @@ public class tinjauPengadaanResponseDTO {
     private LocalDateTime yayasanFirstReviewedAt;
     private LocalDateTime updatedAt;
     private LocalDateTime createdAt;
+    private String buktiPembelian;
 
     private UUID userId;
     private String reviewerRole;

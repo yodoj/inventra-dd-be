@@ -4,18 +4,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.Data;
 
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class PembelianRequestDTO {
-    @NotEmpty(message = "Harga tidak boleh kosong")
+    @NotNull(message = "Harga tidak boleh kosong")
     @Min(value = 1, message = "Harga tidak boleh kurang dari atau sama dengan 0")
     private Long harga;
     
-    @NotEmpty(message = "Bukti pembelian tidak boleh kosong")
+    @NotNull(message = "Bukti pembelian tidak boleh kosong")
     private MultipartFile buktiPembelian;
 }
