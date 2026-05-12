@@ -10,7 +10,6 @@ import io.ibuprofen.inventra_dd_be.Aset.restdto.response.AsetRuanganResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.service.AsetService;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
-import io.ibuprofen.inventra_dd_be.Aset.model.StatusAset;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.List;

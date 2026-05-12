@@ -391,11 +391,12 @@ public class AsetServiceImpl implements AsetService {
     private AsetBarangResponseDTO mapToAsetBarangDTO(AsetBarang aset) {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         Integer dipinjamSkrg = peminjamanAsetRepository.countOverlappingLoans(aset.getId(), now, now);
-        if (dipinjamSkrg == null) dipinjamSkrg = 0;
+        int dipinjamCount = (dipinjamSkrg != null) ? dipinjamSkrg : 0;
 
         // Dynamic calculation based on physical capacity
-        int totalKapasitas = aset.getQtyAset() - aset.getQtyRusak() - aset.getQtyPerbaikan() - aset.getQtyDimusnahkan();
-        int tersediaSkrg = Math.max(0, totalKapasitas - dipinjamSkrg);
+        int totalKapasitas = nullToZero(aset.getQtyAset()) - nullToZero(aset.getQtyRusak()) 
+                           - nullToZero(aset.getQtyPerbaikan()) - nullToZero(aset.getQtyDimusnahkan());
+        int tersediaSkrg = Math.max(0, totalKapasitas - dipinjamCount);
 
         return AsetBarangResponseDTO.builder()
                 .idAset(aset.getId())
@@ -403,15 +404,15 @@ public class AsetServiceImpl implements AsetService {
                 .gambarUrlAset(aset.getGambarUrlAset())
                 .namaAset(aset.getNamaAset())
                 .merkAset(aset.getMerkAset())
-                .qtyAset(aset.getQtyAset())
+                .qtyAset(nullToZero(aset.getQtyAset()))
                 .lokasiAset(aset.getLokasiAset())
                 .kategoriAset(aset.getKategoriAset())
                 .statusAset(aset.getStatusAset())
                 .qtyTersedia(tersediaSkrg)
-                .qtyRusak(aset.getQtyRusak())
-                .qtyPerbaikan(aset.getQtyPerbaikan())
-                .qtyDimusnahkan(aset.getQtyDimusnahkan())
-                .qtyDipinjam(dipinjamSkrg)
+                .qtyRusak(nullToZero(aset.getQtyRusak()))
+                .qtyPerbaikan(nullToZero(aset.getQtyPerbaikan()))
+                .qtyDimusnahkan(nullToZero(aset.getQtyDimusnahkan()))
+                .qtyDipinjam(dipinjamCount)
                 .keteranganAset(aset.getKeteranganAset())
                 .unit(aset.getUnit())
                 .build();
@@ -447,10 +448,11 @@ public class AsetServiceImpl implements AsetService {
         List<AsetBarang> barangList = asetBarangRepository.findBorrowableInUnit(unit);
         for (AsetBarang b : barangList) {
             Integer dipinjamSkrg = peminjamanAsetRepository.countOverlappingLoans(b.getId(), now, now);
-            if (dipinjamSkrg == null) dipinjamSkrg = 0;
+            int dipinjamCount = (dipinjamSkrg != null) ? dipinjamSkrg : 0;
             
-            int totalKapasitas = b.getQtyAset() - b.getQtyRusak() - b.getQtyPerbaikan() - b.getQtyDimusnahkan();
-            int tersediaSkrg = Math.max(0, totalKapasitas - dipinjamSkrg);
+            int totalKapasitas = nullToZero(b.getQtyAset()) - nullToZero(b.getQtyRusak()) 
+                               - nullToZero(b.getQtyPerbaikan()) - nullToZero(b.getQtyDimusnahkan());
+            int tersediaSkrg = Math.max(0, totalKapasitas - dipinjamCount);
 
             result.add(BorrowableAsetResponseDTO.builder()
                     .idAset(b.getId())
@@ -479,5 +481,9 @@ public class AsetServiceImpl implements AsetService {
         }
 
         return result;
+    }
+
+    private int nullToZero(Integer val) {
+        return (val != null) ? val : 0;
     }
 }

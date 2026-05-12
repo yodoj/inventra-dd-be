@@ -106,4 +106,26 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
             @Param("excludeId") UUID excludeId,
             @Param("waktuStart") java.time.LocalDateTime waktuStart,
             @Param("waktuEnd") java.time.LocalDateTime waktuEnd);
+
+    @Query("SELECT COUNT(p) FROM PeminjamanAset p WHERE p.aset.unit = :unit AND p.statusPeminjaman = 'DISETUJUI'")
+    long countApprovedPeminjamanByUnit(@Param("unit") String unit);
+
+    @Query(value = "SELECT EXTRACT(MONTH FROM p.waktu_peminjaman) as period, COUNT(*) as count " +
+           "FROM peminjaman_aset p JOIN aset a ON p.id_aset = a.id_aset " +
+           "WHERE (:unit IS NULL OR a.unit = :unit) " +
+           "AND (:kategori IS NULL OR a.kategori_aset = :kategori) " +
+           "AND p.status_peminjaman = 'DISETUJUI' " +
+           "AND EXTRACT(YEAR FROM p.waktu_peminjaman) = :year " +
+           "GROUP BY period ORDER BY period", nativeQuery = true)
+    java.util.List<Object[]> getMonthlyTrend(@Param("unit") String unit, @Param("year") int year, @Param("kategori") String kategori);
+
+    @Query(value = "SELECT CEIL(EXTRACT(DAY FROM p.waktu_peminjaman) / 7.0) as period, COUNT(*) as count " +
+           "FROM peminjaman_aset p JOIN aset a ON p.id_aset = a.id_aset " +
+           "WHERE (:unit IS NULL OR a.unit = :unit) " +
+           "AND (:kategori IS NULL OR a.kategori_aset = :kategori) " +
+           "AND p.status_peminjaman = 'DISETUJUI' " +
+           "AND EXTRACT(YEAR FROM p.waktu_peminjaman) = :year " +
+           "AND EXTRACT(MONTH FROM p.waktu_peminjaman) = :month " +
+           "GROUP BY period ORDER BY period", nativeQuery = true)
+    java.util.List<Object[]> getWeeklyTrend(@Param("unit") String unit, @Param("year") int year, @Param("month") int month, @Param("kategori") String kategori);
 }
