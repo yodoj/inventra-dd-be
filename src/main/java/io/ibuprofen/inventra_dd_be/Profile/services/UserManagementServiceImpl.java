@@ -167,8 +167,18 @@ public class UserManagementServiceImpl implements UserManagementService {
             }
         }
 
-        String phone = (request.getNomorTelepon() == null || request.getNomorTelepon().isBlank()) 
-                      ? "-" : request.getNomorTelepon();
+        String phone;
+        if (request.getNomorTelepon() == null || request.getNomorTelepon().isBlank()) {
+            phone = "-";
+        } else {
+            phone = request.getNomorTelepon().trim();
+            if (!phone.matches("^[0-9]+$")) {
+                throw new RuntimeException("Error: Nomor telepon harus hanya berisi angka");
+            }
+            if (!phone.startsWith("08")) {
+                throw new RuntimeException("Error: Format nomor telepon harus diawali dengan 08 (contoh: 08123456789)");
+            }
+        }
 
         User newUser = User.builder()
                 .name(request.getNamaLengkap())
