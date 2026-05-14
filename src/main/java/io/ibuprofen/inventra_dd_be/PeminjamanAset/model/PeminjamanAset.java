@@ -49,6 +49,9 @@ public class PeminjamanAset {
     @Column(name = "status_peminjaman", nullable = false)
     private StatusPeminjaman statusPeminjaman;
 
+    @Column(name = "unit_tujuan", nullable = false)
+    private String unitTujuan;
+
     public enum StatusPeminjaman {
         DIAJUKAN,
         DISETUJUI,

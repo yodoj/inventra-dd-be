@@ -21,6 +21,7 @@ import java.io.IOException;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.Status;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.TinjauPengadaan;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.repository.TinjauPengadaanRepository;
+import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.PembelianRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.tinjauPengadaanRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinjauPengadaanResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
@@ -42,11 +43,14 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
     @Autowired
     private AsetService asetService;
-    
-    private final TinjauPengadaanRepository repo;
-    private final PengadaanAsetRepository pengadaanRepo;
-    private final UserRepository userRepository;
-    private final AsetBarangRepository asetBarangRepository;
+    @Autowired
+    private  TinjauPengadaanRepository repo;
+    @Autowired
+    private  PengadaanAsetRepository pengadaanRepo;
+    @Autowired
+    private  UserRepository userRepository;
+    @Autowired
+    private  AsetBarangRepository asetBarangRepository;
   
 
     @Override
@@ -339,7 +343,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
     @Override
     @Transactional
-    public tinjauPengadaanResponseDTO beli(UUID pengadaanId, Long hargaFinal, MultipartFile file) {
+    public tinjauPengadaanResponseDTO beli(UUID pengadaanId, PembelianRequestDTO request, MultipartFile file) {
         User currentUser = getCurrentUserEntity();
         
         if (currentUser.getRole() != Role.YAYASAN) {
@@ -366,11 +370,11 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         if (file != null && !file.isEmpty()) {
             fileName = saveFileToLocal(file); 
         }
-        if (hargaFinal == null || hargaFinal <= 0) {
+        if (request.getHarga() == null || request.getHarga() <= 0) {
             throw new IllegalStateException("Harga tidak boleh kurang dari atau sama dengan 0");
         }
 
-        t.setHarga(hargaFinal);
+        t.setHarga(request.getHarga());
         t.setBuktiPembelian(fileName);
         t.setStatus(Status.DIBELI);
         t.setUpdatedAt(LocalDateTime.now());
@@ -403,10 +407,11 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
 
         asetBarangRepository.save(asetBarang);
     }
-
+    
     private String saveFileToLocal(MultipartFile file) {
         try {
-            String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            String cleanName = file.getOriginalFilename().replaceAll("\\s+", "_");
+            String filename = UUID.randomUUID() + ".png";
             Path root = Paths.get("uploads/bukti-pembelian");
             if (!Files.exists(root)) Files.createDirectories(root);
             Files.copy(file.getInputStream(), root.resolve(filename));
@@ -436,6 +441,7 @@ public class TinjauPengadaanServiceImpl implements TinjauPengadaanService {
         .createdAt(t.getCreatedAt())
         .kepsekFirstReviewedAt(t.getKepsekFirstReviewedAt())
         .yayasanFirstReviewedAt(t.getYayasanFirstReviewedAt())
+        .buktiPembelian(t.getBuktiPembelian())
         .updatedAt(t.getUpdatedAt())
         .userId(t.getUser() != null ? t.getUser().getId() : null)
         .namaReviewer(t.getUser() != null ? t.getUser().getName() : null)

@@ -80,10 +80,10 @@ public class UserRestController {
                         BaseResponseDTO.error(400, "Error: NISN dan Kelas tidak boleh kosong untuk SISWA")
                     );
                 }
-                // Validasi NISN hanya angka
-                if (!user.getNisn().matches("^[0-9]+$")) {
+                // Validasi NISN 10 digit angka
+                if (!user.getNisn().matches("^[0-9]{10}$")) {
                     return ResponseEntity.status(400).body(
-                        BaseResponseDTO.error(400, "Error: NISN harus hanya berisi angka")
+                        BaseResponseDTO.error(400, "Error: NISN harus tepat 10 digit angka")
                     );
                 }
             }
@@ -145,16 +145,22 @@ public class UserRestController {
             }
 
             if (updateRequest.getPhoneNumber() != null && !updateRequest.getPhoneNumber().isBlank()) {
-                user.setPhoneNumber(updateRequest.getPhoneNumber());
+                String normalizedPhone = normalizePhoneNumber(updateRequest.getPhoneNumber());
+                if (!normalizedPhone.matches("^08[0-9]{6,13}$")) {
+                    return ResponseEntity.status(400).body(
+                        BaseResponseDTO.error(400, "Error: Nomor telepon tidak valid. Gunakan format 08xx, +62xx, atau 62xx dengan panjang 8-15 digit")
+                    );
+                }
+                user.setPhoneNumber(normalizedPhone);
             }
 
             // Untuk SISWA, update NISN dan Kelas
             if (role.equals("SISWA")) {
                 if (updateRequest.getNisn() != null && !updateRequest.getNisn().isBlank()) {
-                    // Validasi NISN hanya angka
-                    if (!updateRequest.getNisn().matches("^[0-9]+$")) {
+                    // Validasi NISN tepat 10 digit angka
+                    if (!updateRequest.getNisn().matches("^[0-9]{10}$")) {
                         return ResponseEntity.status(400).body(
-                            BaseResponseDTO.error(400, "Error: NISN harus hanya berisi angka")
+                            BaseResponseDTO.error(400, "Error: NISN harus tepat 10 digit angka")
                         );
                     }
                     user.setNisn(updateRequest.getNisn());
@@ -269,6 +275,19 @@ public class UserRestController {
                 BaseResponseDTO.error(500, "Error: An unexpected error occurred")
             );
         }
+    }
+
+    private String normalizePhoneNumber(String phone) {
+        // Hapus spasi, tanda hubung, titik, dan tanda kurung
+        String cleaned = phone.replaceAll("[\\s\\-\\.\\(\\)]", "");
+        // +62xxx → 0xxx
+        if (cleaned.startsWith("+62")) {
+            cleaned = "0" + cleaned.substring(3);
+        // 62xxx → 0xxx (hanya jika lebih dari 2 karakter agar tidak salah potong)
+        } else if (cleaned.startsWith("62") && cleaned.length() > 5) {
+            cleaned = "0" + cleaned.substring(2);
+        }
+        return cleaned;
     }
 
     @GetMapping("/password-history")
