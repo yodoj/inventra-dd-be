@@ -17,6 +17,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -34,10 +35,9 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
     @Override
     public LaporanUtilisasiResponseDTO<RiwayatPeminjamanDTO> getHistoryReports(
             String unitFilter,
-            Integer periodeTahun,
-            Integer periodeBulan,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            String periodType,
+            LocalDate startDate,
+            LocalDate endDate,
             String search,
             String kategori,
             int page,
@@ -46,11 +46,15 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         UserDetailsImpl userDetails = getCurrentUser();
         String userUnitForRbac = determineUserUnitForRbac(userDetails);
 
+        LocalDateTime[] resolvedDates = resolveDateRange(periodType, startDate, endDate);
+        LocalDateTime resolvedStart = resolvedDates[0];
+        LocalDateTime resolvedEnd = resolvedDates[1];
+
         int pageIndex = Math.max(page - 1, 0);
         Pageable pageable = PageRequest.of(pageIndex, limit > 0 ? limit : 10);
 
         Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
-                userUnitForRbac, unitFilter, periodeTahun, periodeBulan, startDate, endDate, search, kategori
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori
         );
 
         Page<PeminjamanAset> pagedResult = laporanUtilisasiRepository.findAll(spec, pageable);
@@ -72,10 +76,9 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
     @Override
     public LaporanUtilisasiResponseDTO<FrekuensiPeminjamanDTO> getFrequencyReports(
             String unitFilter,
-            Integer periodeTahun,
-            Integer periodeBulan,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            String periodType,
+            LocalDate startDate,
+            LocalDate endDate,
             String search,
             String kategori,
             int page,
@@ -84,8 +87,12 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         UserDetailsImpl userDetails = getCurrentUser();
         String userUnitForRbac = determineUserUnitForRbac(userDetails);
 
+        LocalDateTime[] resolvedDates = resolveDateRange(periodType, startDate, endDate);
+        LocalDateTime resolvedStart = resolvedDates[0];
+        LocalDateTime resolvedEnd = resolvedDates[1];
+
         Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
-                userUnitForRbac, unitFilter, periodeTahun, periodeBulan, startDate, endDate, search, kategori
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori
         );
 
         // Ambil semua data yang valid untuk diagregasi per aset
@@ -94,7 +101,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         Map<Aset, List<PeminjamanAset>> grouped = allMatching.stream()
                 .collect(Collectors.groupingBy(PeminjamanAset::getAset));
 
-        String periodeLabel = generatePeriodeLabel(periodeBulan, periodeTahun);
+        String periodeLabel = generatePeriodeLabel(periodType, resolvedStart, resolvedEnd);
 
         List<FrekuensiPeminjamanDTO> aggregatedList = grouped.entrySet().stream().map(entry -> {
             Aset aset = entry.getKey();
@@ -189,14 +196,72 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
                 .collect(Collectors.joining(" "));
     }
 
-    private String generatePeriodeLabel(Integer bulan, Integer tahun) {
-        if (tahun == null) {
+    private String generatePeriodeLabel(String periodType, LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) {
             return "Semua Periode";
         }
-        if (bulan != null && bulan >= 1 && bulan <= 12) {
+        if ("monthly".equalsIgnoreCase(periodType)) {
             String[] months = {"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"};
-            return months[bulan - 1] + " " + tahun;
+            return months[start.getMonthValue() - 1] + " " + start.getYear();
+        } else if ("yearly".equalsIgnoreCase(periodType)) {
+            return "Jan - Des " + start.getYear();
+        } else if ("daily".equalsIgnoreCase(periodType)) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+            return start.format(formatter) + " - " + end.format(formatter);
         }
-        return "Jan - Des " + tahun;
+        return "Semua Periode";
+    }
+
+    private LocalDateTime[] resolveDateRange(String periodType, LocalDate startDate, LocalDate endDate) {
+        if (periodType == null || periodType.trim().isEmpty()) {
+            if (startDate != null && endDate != null) {
+                 if (startDate.isAfter(endDate)) {
+                     throw new IllegalArgumentException("start_date tidak boleh lebih besar dari end_date");
+                 }
+                 return new LocalDateTime[]{startDate.atStartOfDay(), endDate.atTime(23, 59, 59, 999999999)};
+            }
+            return new LocalDateTime[]{null, null};
+        }
+
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+
+        switch (periodType.toLowerCase()) {
+            case "daily":
+                if (startDate == null || endDate == null) {
+                    throw new IllegalArgumentException("start_date dan end_date wajib diisi untuk periode daily");
+                }
+                start = startDate.atStartOfDay();
+                end = endDate.atTime(23, 59, 59, 999999999);
+                break;
+            case "monthly":
+                if (startDate == null && endDate == null) {
+                    start = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+                    end = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()).atTime(23, 59, 59, 999999999);
+                } else {
+                    LocalDate refDate = startDate != null ? startDate : endDate;
+                    start = refDate.withDayOfMonth(1).atStartOfDay();
+                    end = refDate.withDayOfMonth(refDate.lengthOfMonth()).atTime(23, 59, 59, 999999999);
+                }
+                break;
+            case "yearly":
+                if (startDate == null && endDate == null) {
+                    start = LocalDate.now().withDayOfYear(1).atStartOfDay();
+                    end = LocalDate.now().withDayOfYear(LocalDate.now().lengthOfYear()).atTime(23, 59, 59, 999999999);
+                } else {
+                    LocalDate refDate = startDate != null ? startDate : endDate;
+                    start = refDate.withDayOfYear(1).atStartOfDay();
+                    end = refDate.withDayOfYear(refDate.lengthOfYear()).atTime(23, 59, 59, 999999999);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Format periode tidak valid. Gunakan: daily, monthly, atau yearly");
+        }
+
+        if (start.isAfter(end)) {
+            throw new IllegalArgumentException("start_date tidak boleh lebih besar dari end_date");
+        }
+
+        return new LocalDateTime[]{start, end};
     }
 }

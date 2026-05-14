@@ -4,16 +4,16 @@ import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.restdto.response.FrekuensiPe
 import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.restdto.response.LaporanUtilisasiResponseDTO;
 import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.restdto.response.RiwayatPeminjamanDTO;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public interface LaporanUtilisasiService {
 
     LaporanUtilisasiResponseDTO<RiwayatPeminjamanDTO> getHistoryReports(
             String unitFilter,
-            Integer periodeTahun,
-            Integer periodeBulan,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            String periodType,
+            LocalDate startDate,
+            LocalDate endDate,
             String search,
             String kategori,
             int page,
@@ -21,10 +21,9 @@ public interface LaporanUtilisasiService {
 
     LaporanUtilisasiResponseDTO<FrekuensiPeminjamanDTO> getFrequencyReports(
             String unitFilter,
-            Integer periodeTahun,
-            Integer periodeBulan,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            String periodType,
+            LocalDate startDate,
+            LocalDate endDate,
             String search,
             String kategori,
             int page,

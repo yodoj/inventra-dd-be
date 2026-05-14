@@ -17,8 +17,6 @@ public class LaporanUtilisasiSpecification {
     public static Specification<PeminjamanAset> filterHistory(
             String userUnitForRbac,
             String unitFilter,
-            Integer periodeTahun,
-            Integer periodeBulan,
             LocalDateTime startDate,
             LocalDateTime endDate,
             String search,
@@ -49,22 +47,7 @@ public class LaporanUtilisasiSpecification {
                 ));
             }
 
-            // Filter gabungan Tahun & Bulan menjadi rentang waktu agar kompatibel di semua SQL dialect
-            if (periodeTahun != null) {
-                LocalDateTime start;
-                LocalDateTime end;
-                if (periodeBulan != null && periodeBulan >= 1 && periodeBulan <= 12) {
-                    start = LocalDateTime.of(periodeTahun, periodeBulan, 1, 0, 0);
-                    end = start.plusMonths(1);
-                } else {
-                    start = LocalDateTime.of(periodeTahun, 1, 1, 0, 0);
-                    end = start.plusYears(1);
-                }
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("waktuPeminjaman"), start));
-                predicates.add(criteriaBuilder.lessThan(root.get("waktuPeminjaman"), end));
-            }
-
-            // Filter custom rentang tanggal (Start Date - End Date)
+            // Filter rentang tanggal (Start Date - End Date)
             if (startDate != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("waktuPeminjaman"), startDate));
             }
