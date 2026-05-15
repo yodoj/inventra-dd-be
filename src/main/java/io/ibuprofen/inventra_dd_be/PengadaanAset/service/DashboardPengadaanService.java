@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Year;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class DashboardPengadaanService {
@@ -114,6 +117,167 @@ public class DashboardPengadaanService {
         return new TopDashboardResponseDTO(
                 // topPengadaan,
                 topBiaya
+        );
+    }
+
+    // Fungsi untuk mengambil bar chart estimasi biaya pengadaan per tahun
+    public List<BiayaPengadaanChartResponseDTO> getBiayaPengadaanChart(String unit) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        User user = userRepository.findById(userDetails.getId()).orElse(null);
+
+        String role = user.getRole().name();
+        String userUnit = user.getUnit();
+
+        // validasi value unit
+        unit = validateAndNormalizeUnit(unit);
+
+        // selain yayasan/admin tidak boleh filter unit
+        if (!role.equalsIgnoreCase("YAYASAN")
+                && !role.equalsIgnoreCase("ADMIN")) {
+
+            if (unit != null) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Forbidden: Anda tidak memiliki akses filter unit."
+                );
+            }
+
+            unit = userUnit;
+        }
+
+        List<BiayaPengadaanChartResponseDTO> dbResult = repo.getBiayaPengadaanPerTahun(unit);
+
+        // Mengubah hasil query jadi map
+        Map<Integer, Long> biayaMap = dbResult.stream()
+                .collect(Collectors.toMap(
+                        BiayaPengadaanChartResponseDTO::getTahun,
+                        BiayaPengadaanChartResponseDTO::getTotalBiaya
+                ));
+
+        int currentYear = Year.now().getValue();
+
+        List<BiayaPengadaanChartResponseDTO> finalResult = new java.util.ArrayList<>();
+
+        // generate 4 tahun terakhir
+        for (int year = currentYear - 3; year <= currentYear; year++) {
+
+            finalResult.add(
+                    new BiayaPengadaanChartResponseDTO(
+                            year,
+                            biayaMap.getOrDefault(year, 0L)
+                    )
+            );
+        }
+
+        return finalResult;
+    }
+
+    // Fungsi untuk mengambil bar chart jumlah aset per tahun
+    public List<JumlahAsetChartResponseDTO> getJumlahAsetChart(String unit) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        User user = userRepository.findById(userDetails.getId()).orElse(null);
+
+        String role = user.getRole().name();
+        String userUnit = user.getUnit();
+
+        // validasi value unit
+        unit = validateAndNormalizeUnit(unit);
+
+        // selain yayasan/admin tidak boleh filter unit
+        if (!role.equalsIgnoreCase("YAYASAN")
+                && !role.equalsIgnoreCase("ADMIN")) {
+
+            if (unit != null) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Forbidden: Anda tidak memiliki akses filter unit."
+                );
+            }
+
+            unit = userUnit;
+        }
+
+        List<JumlahAsetChartResponseDTO> dbResult = repo.getJumlahAsetPerTahun(unit);
+
+        // Mengubah hasil query jadi map
+        Map<Integer, Long> jumlahMap = dbResult.stream()
+                .collect(Collectors.toMap(
+                        JumlahAsetChartResponseDTO::getTahun,
+                        JumlahAsetChartResponseDTO::getJumlahAset
+                ));
+
+        int currentYear = Year.now().getValue();
+
+        List<JumlahAsetChartResponseDTO> finalResult = new java.util.ArrayList<>();
+
+        // generate 4 tahun terakhir
+        for (int year = currentYear - 3; year <= currentYear; year++) {
+
+            finalResult.add(
+                    new JumlahAsetChartResponseDTO(
+                            year,
+                            jumlahMap.getOrDefault(year, 0L)
+                    )
+            );
+        }
+
+        return finalResult;
+    }
+
+    // Fungsi untuk validasi dan normalisasi parameter unit
+    private String validateAndNormalizeUnit(String unit) {
+        if (unit == null || unit.isBlank()) {
+            return null;
+        }
+
+        String normalized = unit.trim().toUpperCase();
+
+        switch (normalized) {
+            case "KB-TK":
+            case "SD":
+            case "SMP":
+            case "SMA":
+                return normalized;
+
+            default:
+                throw new IllegalArgumentException(
+                        "Bad Request: Value parameter tidak valid."
+                );
+        }
+    }
+
+    // Fungsi untuk mengambil top 5 aset paling cepat habis
+    public List<TopCepatHabisResponseDTO> getTop5CepatHabis(Integer tahun, String unit) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        User user = userRepository.findById(userDetails.getId()).orElse(null);
+
+        String role = user.getRole().name();
+        String userUnit = user.getUnit();
+
+        // default tahun = 2026
+        if (tahun == null) {
+            tahun = 2026;
+        }
+
+        // validasi unit
+        unit = validateAndNormalizeUnit(unit);
+
+        // role restriction
+        if (!role.equalsIgnoreCase("YAYASAN")
+                && !role.equalsIgnoreCase("ADMIN")) {
+
+            if (unit != null) {
+
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Forbidden: Anda tidak memiliki akses filter unit."
+                );
+            }
+
+            unit = userUnit;
+        }
+
+        return repo.getTop5CepatHabis(
+                tahun,
+                unit,
+                PageRequest.of(0, 5)
         );
     }
 }
