@@ -54,7 +54,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         Pageable pageable = PageRequest.of(pageIndex, limit > 0 ? limit : 10);
 
         Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
-                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true);
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true, false);
 
         Page<PeminjamanAset> pagedResult = laporanUtilisasiRepository.findAll(spec, pageable);
 
@@ -90,7 +90,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         LocalDateTime resolvedEnd = resolvedDates[1];
 
         Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
-                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true);
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true, true);
 
         // Ambil semua data yang valid untuk diagregasi per aset
         List<PeminjamanAset> allMatching = laporanUtilisasiRepository.findAll(spec);

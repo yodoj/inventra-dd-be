@@ -22,7 +22,8 @@ public class LaporanUtilisasiSpecification {
             LocalDateTime endDate,
             String search,
             String kategori,
-            boolean onlyReturned) {
+            boolean onlyReturned,
+            boolean isFrequency) {
 
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -84,11 +85,15 @@ public class LaporanUtilisasiSpecification {
             // Pencarian teks (Search bar)
             if (search != null && !search.trim().isEmpty()) {
                 String pattern = "%" + search.trim().toLowerCase() + "%";
-                Predicate matchNamaPeminjam = criteriaBuilder.like(criteriaBuilder.lower(peminjamJoin.get("name")), pattern);
                 Predicate matchNamaAset = criteriaBuilder.like(criteriaBuilder.lower(asetJoin.get("namaAset")), pattern);
                 Predicate matchKodeAset = criteriaBuilder.like(criteriaBuilder.lower(asetJoin.get("kodeAset")), pattern);
 
-                predicates.add(criteriaBuilder.or(matchNamaPeminjam, matchNamaAset, matchKodeAset));
+                if (isFrequency) {
+                    predicates.add(criteriaBuilder.or(matchNamaAset, matchKodeAset));
+                } else {
+                    Predicate matchNamaPeminjam = criteriaBuilder.like(criteriaBuilder.lower(peminjamJoin.get("name")), pattern);
+                    predicates.add(criteriaBuilder.or(matchNamaPeminjam, matchNamaAset, matchKodeAset));
+                }
             }
 
             // Urutkan berdasarkan waktu peminjaman terbaru secara default
