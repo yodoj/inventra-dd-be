@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,15 +18,32 @@ import java.util.Map;
 @RequestMapping("/api/home")
 public class HomeRestController {
 
+    @Autowired
+    private io.ibuprofen.inventra_dd_be.Aset.repository.AsetBarangRepository asetBarangRepository;
+
+    @Autowired
+    private io.ibuprofen.inventra_dd_be.Aset.repository.AsetRuanganRepository asetRuanganRepository;
+
+    @Autowired
+    private io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetRepository peminjamanAsetRepository;
+
     @GetMapping
     public ResponseEntity<?> getHomeDetails() {
         Map<String, Object> responseData = new HashMap<>();
 
-        // Stats NOT FIX WAITING FOR DATA ASSETS & PEMINJAMAN
+        long totalAsetBarang = asetBarangRepository.count();
+        long totalAsetRuangan = asetRuanganRepository.count();
+        long totalAset = totalAsetBarang + totalAsetRuangan;
+
+        long peminjamanAktif = peminjamanAsetRepository.countByStatusPeminjaman(
+                io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset.StatusPeminjaman.DISETUJUI
+        );
+
         Map<String, String> stats = new HashMap<>();
-        stats.put("totalAsetSekolah", "1,254");
+        // format totalAset with commas
+        stats.put("totalAsetSekolah", String.format("%,d", totalAset).replace(',', '.'));
         stats.put("unitTerintegrasi", "4");
-        stats.put("peminjamanAktif", "156");
+        stats.put("peminjamanAktif", String.format("%,d", peminjamanAktif).replace(',', '.'));
         responseData.put("stats", stats);
 
         // FAQ

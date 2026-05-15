@@ -106,4 +106,6 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
             @Param("excludeId") UUID excludeId,
             @Param("waktuStart") java.time.LocalDateTime waktuStart,
             @Param("waktuEnd") java.time.LocalDateTime waktuEnd);
+
+    long countByStatusPeminjaman(StatusPeminjaman status);
 }
