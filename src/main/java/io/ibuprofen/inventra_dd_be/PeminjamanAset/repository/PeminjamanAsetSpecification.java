@@ -49,13 +49,13 @@ public class PeminjamanAsetSpecification {
                 predicates.add(criteriaBuilder.equal(criteriaBuilder.function("DATE", LocalDate.class, root.get("waktuPengembalian")), tanggalPengembalian));
             }
 
-            // Check if we need Aset join
+            // Cek apakah perlu melakukan join dengan tabel Aset
             Join<PeminjamanAset, Aset> asetJoin = null;
             if ((kategoriGroup != null && !kategoriGroup.isEmpty()) || (search != null && !search.isEmpty())) {
                 asetJoin = root.join("aset");
             }
 
-            // 4. Filter Kategori (Barang vs Ruang)
+            // Filter Kategori (Barang vs Ruang)
             if (kategoriGroup != null && !kategoriGroup.isEmpty()) {
                 if (kategoriGroup.equalsIgnoreCase("BARANG")) {
                     predicates.add(criteriaBuilder.equal(asetJoin.get("kategoriAset"), KategoriAset.BARANG_TIDAK_HABIS_PAKAI));
@@ -64,7 +64,7 @@ public class PeminjamanAsetSpecification {
                 }
             }
 
-            // 5. Search by nama, kode, or merk
+            // Search by nama, kode, atau merk
             if (search != null && !search.isEmpty()) {
                 Predicate namaLike = criteriaBuilder.like(criteriaBuilder.lower(asetJoin.get("namaAset")), search);
                 Predicate kodeLike = criteriaBuilder.like(criteriaBuilder.lower(asetJoin.get("kodeAset")), search);
