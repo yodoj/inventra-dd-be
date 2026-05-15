@@ -28,4 +28,13 @@ public interface LaporanUtilisasiService {
             String kategori,
             int page,
             int limit);
+
+    byte[] exportPdf(
+            String reportType,
+            String unitFilter,
+            String periodType,
+            LocalDate startDate,
+            LocalDate endDate,
+            String search,
+            String kategori);
 }

@@ -8,6 +8,11 @@ import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.restdto.response.LaporanUtil
 import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.restdto.response.RiwayatPeminjamanDTO;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.repository.LaporanUtilisasiRepository;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,11 +22,14 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.awt.Color;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -263,5 +271,131 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         }
 
         return new LocalDateTime[] { start, end };
+    }
+    @Override
+    public byte[] exportPdf(String reportType, String unitFilter, String periodType, LocalDate startDate, LocalDate endDate, String search, String kategori) {
+        UserDetailsImpl userDetails = getCurrentUser();
+        String userUnitForRbac = determineUserUnitForRbac(userDetails);
+
+        LocalDateTime[] resolvedDates = resolveDateRange(periodType, startDate, endDate);
+        LocalDateTime resolvedStart = resolvedDates[0];
+        LocalDateTime resolvedEnd = resolvedDates[1];
+
+        // Fetch data based on type
+        boolean isFrequency = "frequency".equalsIgnoreCase(reportType);
+        Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true, isFrequency);
+
+        List<PeminjamanAset> allData = laporanUtilisasiRepository.findAll(spec);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4.rotate());
+        PdfWriter.getInstance(document, baos);
+
+        document.open();
+        
+        // Add Title
+        Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
+        fontTitle.setSize(18);
+        String titleText = isFrequency ? "Laporan Frekuensi Peminjaman Aset" : "Laporan Riwayat Peminjaman Aset";
+        if (userUnitForRbac != null && !userUnitForRbac.trim().isEmpty()) {
+            titleText += " " + userUnitForRbac.toUpperCase();
+        }
+        Paragraph title = new Paragraph(titleText, fontTitle);
+        title.setAlignment(Paragraph.ALIGN_CENTER);
+        document.add(title);
+
+        // Add Period Label
+        String periodeLabel = generatePeriodeLabel(periodType, resolvedStart, resolvedEnd);
+        Paragraph periode = new Paragraph("Periode: " + periodeLabel, FontFactory.getFont(FontFactory.HELVETICA));
+        periode.setAlignment(Paragraph.ALIGN_CENTER);
+        periode.setSpacingAfter(20);
+        document.add(periode);
+
+        if (allData.isEmpty()) {
+            Paragraph empty = new Paragraph("Data tidak tersedia", FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE));
+            empty.setAlignment(Paragraph.ALIGN_CENTER);
+            document.add(empty);
+        } else {
+            if (isFrequency) {
+                generateFrequencyTable(document, allData, periodType, resolvedStart, resolvedEnd);
+            } else {
+                generateHistoryTable(document, allData);
+            }
+        }
+
+        document.close();
+
+        return baos.toByteArray();
+    }
+
+    private void generateHistoryTable(Document document, List<PeminjamanAset> data) {
+        PdfPTable table = new PdfPTable(8);
+        table.setWidthPercentage(100f);
+        table.setWidths(new float[]{1.5f, 4f, 6f, 1.5f, 2.5f, 4.5f, 4.5f, 6f});
+        table.setSpacingBefore(10);
+
+        writeTableHeader(table, new String[]{"No", "Nama Peminjam", "Aset", "Qty", "Unit", "Waktu Pinjam", "Waktu Kembali", "Tujuan"});
+
+        int no = 1;
+        for (PeminjamanAset p : data) {
+            table.addCell(String.valueOf(no++));
+            table.addCell(p.getPeminjam() != null ? p.getPeminjam().getName() : "-");
+            table.addCell(p.getAset() != null ? p.getAset().getKodeAset() + " - " + p.getAset().getNamaAset() : "-");
+            table.addCell(String.valueOf(p.getQty()));
+            table.addCell(p.getAset() != null && p.getAset().getUnit() != null ? p.getAset().getUnit().toUpperCase() : "-");
+            table.addCell(p.getWaktuPeminjaman().format(DATE_FORMATTER));
+            table.addCell(p.getWaktuPengembalian().format(DATE_FORMATTER));
+            table.addCell(p.getTujuanPeminjaman());
+        }
+        document.add(table);
+    }
+
+    private void generateFrequencyTable(Document document, List<PeminjamanAset> data, String periodType, LocalDateTime start, LocalDateTime end) {
+        PdfPTable table = new PdfPTable(6);
+        table.setWidthPercentage(100f);
+        table.setWidths(new float[]{1.5f, 8f, 4f, 2.5f, 4f, 4f});
+        table.setSpacingBefore(10);
+
+        writeTableHeader(table, new String[]{"No", "Aset", "Kategori", "Unit", "Frekuensi", "Total Durasi"});
+
+        Map<Aset, List<PeminjamanAset>> grouped = data.stream().collect(Collectors.groupingBy(PeminjamanAset::getAset));
+        List<Map.Entry<Aset, List<PeminjamanAset>>> sorted = grouped.entrySet().stream()
+                .sorted((e1, e2) -> Integer.compare(e2.getValue().size(), e1.getValue().size()))
+                .collect(Collectors.toList());
+
+        int no = 1;
+        for (Map.Entry<Aset, List<PeminjamanAset>> entry : sorted) {
+            Aset aset = entry.getKey();
+            List<PeminjamanAset> list = entry.getValue();
+            long totalDays = list.stream().mapToLong(p -> {
+                long days = ChronoUnit.DAYS.between(p.getWaktuPeminjaman().toLocalDate(), p.getWaktuPengembalian().toLocalDate());
+                return days <= 0 ? 1 : days;
+            }).sum();
+
+            table.addCell(String.valueOf(no++));
+            table.addCell(aset.getKodeAset() + " - " + aset.getNamaAset());
+            table.addCell(aset.getKategoriAset() != null ? formatKategori(aset.getKategoriAset().name()) : "-");
+            table.addCell(aset.getUnit() != null ? aset.getUnit().toUpperCase() : "-");
+            table.addCell(list.size() + " Kali");
+            table.addCell(totalDays + " Hari");
+        }
+        document.add(table);
+    }
+
+    private void writeTableHeader(PdfPTable table, String[] headers) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBackgroundColor(new Color(0, 88, 143)); // #00588F
+        cell.setPadding(5);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
+        font.setColor(Color.WHITE);
+        font.setSize(10);
+
+        for (String header : headers) {
+            cell.setPhrase(new Phrase(header, font));
+            table.addCell(cell);
+        }
     }
 }
