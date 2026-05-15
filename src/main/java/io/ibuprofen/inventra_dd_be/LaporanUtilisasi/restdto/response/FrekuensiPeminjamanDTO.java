@@ -40,4 +40,7 @@ public class FrekuensiPeminjamanDTO {
 
     @JsonProperty("periode")
     private String periode;
+
+    @JsonProperty("status_terakhir")
+    private String statusTerakhir;
 }

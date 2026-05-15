@@ -1,6 +1,7 @@
 package io.ibuprofen.inventra_dd_be.LaporanUtilisasi.repository;
 
 import io.ibuprofen.inventra_dd_be.Aset.model.Aset;
+import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import jakarta.persistence.criteria.Join;
@@ -20,13 +21,19 @@ public class LaporanUtilisasiSpecification {
             LocalDateTime startDate,
             LocalDateTime endDate,
             String search,
-            String kategori) {
+            String kategori,
+            boolean onlyReturned) {
 
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             // Selalu hanya ambil data yang berstatus DISETUJUI untuk utilisasi
             predicates.add(criteriaBuilder.equal(root.get("statusPeminjaman"), PeminjamanAset.StatusPeminjaman.DISETUJUI));
+
+            // Jika onlyReturned true, maka waktu_pengembalian harus <= waktu sekarang
+            if (onlyReturned) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("waktuPengembalian"), LocalDateTime.now()));
+            }
 
             Join<PeminjamanAset, Aset> asetJoin = root.join("aset", JoinType.INNER);
             Join<PeminjamanAset, User> peminjamJoin = root.join("peminjam", JoinType.INNER);
@@ -57,10 +64,21 @@ public class LaporanUtilisasiSpecification {
 
             // Filter Kategori Aset
             if (kategori != null && !kategori.trim().isEmpty() && !kategori.equalsIgnoreCase("Semua Kategori")) {
-                predicates.add(criteriaBuilder.equal(
-                        criteriaBuilder.lower(asetJoin.get("kategoriAset").as(String.class)),
-                        kategori.trim().toLowerCase()
-                ));
+                String val = kategori.trim();
+                if (val.equalsIgnoreCase("RUANGAN")) {
+                    predicates.add(root.get("aset").get("kategoriAset").in(
+                            KategoriAset.RUANG_KELAS, KategoriAset.RUANG_NON_KELAS
+                    ));
+                } else if (val.equalsIgnoreCase("BARANG")) {
+                    predicates.add(root.get("aset").get("kategoriAset").in(
+                            KategoriAset.BARANG_HABIS_PAKAI, KategoriAset.BARANG_TIDAK_HABIS_PAKAI
+                    ));
+                } else {
+                    predicates.add(criteriaBuilder.equal(
+                            criteriaBuilder.lower(asetJoin.get("kategoriAset").as(String.class)),
+                            val.toLowerCase()
+                    ));
+                }
             }
 
             // Pencarian teks (Search bar)

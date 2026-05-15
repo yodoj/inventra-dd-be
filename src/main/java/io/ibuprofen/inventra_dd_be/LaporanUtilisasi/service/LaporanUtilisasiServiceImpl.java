@@ -54,8 +54,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         Pageable pageable = PageRequest.of(pageIndex, limit > 0 ? limit : 10);
 
         Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
-                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori
-        );
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true);
 
         Page<PeminjamanAset> pagedResult = laporanUtilisasiRepository.findAll(spec, pageable);
 
@@ -69,8 +68,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
                 pagedResult.getTotalPages(),
                 pageIndex + 1,
                 pageable.getPageSize(),
-                "Data riwayat peminjaman berhasil diambil"
-        );
+                "Data riwayat peminjaman berhasil diambil");
     }
 
     @Override
@@ -92,8 +90,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         LocalDateTime resolvedEnd = resolvedDates[1];
 
         Specification<PeminjamanAset> spec = LaporanUtilisasiSpecification.filterHistory(
-                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori
-        );
+                userUnitForRbac, unitFilter, resolvedStart, resolvedEnd, search, kategori, true);
 
         // Ambil semua data yang valid untuk diagregasi per aset
         List<PeminjamanAset> allMatching = laporanUtilisasiRepository.findAll(spec);
@@ -109,7 +106,8 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
 
             long count = list.size();
             long totalDays = list.stream().mapToLong(p -> {
-                long days = ChronoUnit.DAYS.between(p.getWaktuPeminjaman().toLocalDate(), p.getWaktuPengembalian().toLocalDate());
+                long days = ChronoUnit.DAYS.between(p.getWaktuPeminjaman().toLocalDate(),
+                        p.getWaktuPengembalian().toLocalDate());
                 return days <= 0 ? 1 : days;
             }).sum();
 
@@ -127,19 +125,20 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
                     .periode(periodeLabel)
                     .build();
         })
-        .sorted(Comparator.comparingLong(FrekuensiPeminjamanDTO::getFrekuensiCount).reversed())
-        .collect(Collectors.toList());
+                .sorted(Comparator.comparingLong(FrekuensiPeminjamanDTO::getFrekuensiCount).reversed())
+                .collect(Collectors.toList());
 
         // Implementasi Memory Pagination
         int safeLimit = limit > 0 ? limit : 10;
         int pageIndex = Math.max(page - 1, 0);
         int totalData = aggregatedList.size();
         int totalPage = (int) Math.ceil((double) totalData / safeLimit);
-        
+
         int fromIndex = pageIndex * safeLimit;
         int toIndex = Math.min(fromIndex + safeLimit, totalData);
-        
-        List<FrekuensiPeminjamanDTO> pagedList = fromIndex < totalData ? aggregatedList.subList(fromIndex, toIndex) : Collections.emptyList();
+
+        List<FrekuensiPeminjamanDTO> pagedList = fromIndex < totalData ? aggregatedList.subList(fromIndex, toIndex)
+                : Collections.emptyList();
 
         return LaporanUtilisasiResponseDTO.success(
                 pagedList,
@@ -147,8 +146,7 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
                 totalPage,
                 pageIndex + 1,
                 safeLimit,
-                "Data frekuensi peminjaman berhasil diambil"
-        );
+                "Data frekuensi peminjaman berhasil diambil");
     }
 
     private UserDetailsImpl getCurrentUser() {
@@ -172,7 +170,8 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
 
     private RiwayatPeminjamanDTO mapToRiwayatDTO(PeminjamanAset p) {
         String namaAset = p.getAset() != null ? p.getAset().getKodeAset() + " - " + p.getAset().getNamaAset() : "-";
-        String unitAset = p.getAset() != null && p.getAset().getUnit() != null ? p.getAset().getUnit().toUpperCase() : "-";
+        String unitAset = p.getAset() != null && p.getAset().getUnit() != null ? p.getAset().getUnit().toUpperCase()
+                : "-";
         String namaPeminjam = p.getPeminjam() != null ? p.getPeminjam().getName() : "-";
 
         return RiwayatPeminjamanDTO.builder()
@@ -188,7 +187,8 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
     }
 
     private String formatKategori(String enumName) {
-        if (enumName == null) return "-";
+        if (enumName == null)
+            return "-";
         String lower = enumName.toLowerCase().replace("_", " ");
         String[] words = lower.split(" ");
         return Arrays.stream(words)
@@ -198,10 +198,10 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
 
     private String generatePeriodeLabel(String periodType, LocalDateTime start, LocalDateTime end) {
         if (start == null || end == null) {
-            return "Semua Periode";
+            return "Jan - Des " + LocalDate.now().getYear();
         }
         if ("monthly".equalsIgnoreCase(periodType)) {
-            String[] months = {"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"};
+            String[] months = { "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des" };
             return months[start.getMonthValue() - 1] + " " + start.getYear();
         } else if ("yearly".equalsIgnoreCase(periodType)) {
             return "Jan - Des " + start.getYear();
@@ -209,18 +209,18 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
             return start.format(formatter) + " - " + end.format(formatter);
         }
-        return "Semua Periode";
+        return "Jan - Des " + LocalDate.now().getYear();
     }
 
     private LocalDateTime[] resolveDateRange(String periodType, LocalDate startDate, LocalDate endDate) {
         if (periodType == null || periodType.trim().isEmpty()) {
             if (startDate != null && endDate != null) {
-                 if (startDate.isAfter(endDate)) {
-                     throw new IllegalArgumentException("start_date tidak boleh lebih besar dari end_date");
-                 }
-                 return new LocalDateTime[]{startDate.atStartOfDay(), endDate.atTime(23, 59, 59, 999999999)};
+                if (startDate.isAfter(endDate)) {
+                    throw new IllegalArgumentException("start_date tidak boleh lebih besar dari end_date");
+                }
+                return new LocalDateTime[] { startDate.atStartOfDay(), endDate.atTime(23, 59, 59, 999999999) };
             }
-            return new LocalDateTime[]{null, null};
+            return new LocalDateTime[] { null, null };
         }
 
         LocalDateTime start = null;
@@ -262,6 +262,6 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
             throw new IllegalArgumentException("start_date tidak boleh lebih besar dari end_date");
         }
 
-        return new LocalDateTime[]{start, end};
+        return new LocalDateTime[] { start, end };
     }
 }
