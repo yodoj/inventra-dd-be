@@ -3,6 +3,7 @@ package io.ibuprofen.inventra_dd_be.Aset.restcontroller;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.DashboardAssetResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.PeminjamanTrendResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.PeminjamanUnitResponseDTO;
+import io.ibuprofen.inventra_dd_be.Aset.restdto.response.TopAsetResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.service.DashboardAssetService;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
@@ -74,8 +75,41 @@ public class DashboardAssetRestController {
             return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "User not found"));
         }
 
-        int year = (tahun != null) ? tahun : java.time.Year.now().getValue();
-        List<PeminjamanTrendResponseDTO> result = dashboardAssetService.getPeminjamanTrend(userOptional.get(), year, bulan, unit, kategori);
+        List<PeminjamanTrendResponseDTO> result = dashboardAssetService.getPeminjamanTrend(userOptional.get(), tahun, bulan, unit, kategori);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data tren peminjaman berhasil diambil"));
+    }
+
+    @GetMapping("/top-dipinjam")
+    @PreAuthorize("hasAnyAuthority('YAYASAN', 'SARPRAS', 'KEPSEK', 'ADMIN')")
+    public ResponseEntity<?> getTopDipinjam(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer tahun,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer bulan,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String unit,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String kategori
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Optional<User> userOptional = userRepository.findById(userDetails.getId());
+        if (userOptional.isEmpty()) return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "User not found"));
+
+        List<TopAsetResponseDTO> result = dashboardAssetService.getTopBorrowed(userOptional.get(), tahun, bulan, unit, kategori);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data top 5 aset dipinjam berhasil diambil"));
+    }
+
+    @GetMapping("/top-rusak-hilang")
+    @PreAuthorize("hasAnyAuthority('YAYASAN', 'SARPRAS', 'KEPSEK', 'ADMIN')")
+    public ResponseEntity<?> getTopRusakHilang(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer tahun,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer bulan,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String unit,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String kategori
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Optional<User> userOptional = userRepository.findById(userDetails.getId());
+        if (userOptional.isEmpty()) return ResponseEntity.status(404).body(BaseResponseDTO.error(404, "User not found"));
+
+        List<TopAsetResponseDTO> result = dashboardAssetService.getTopDamaged(userOptional.get(), tahun, bulan, unit, kategori);
+        return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data top 5 aset rusak/hilang berhasil diambil"));
     }
 }

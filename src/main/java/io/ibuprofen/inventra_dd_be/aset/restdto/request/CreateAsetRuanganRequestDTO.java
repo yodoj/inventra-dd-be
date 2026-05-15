@@ -15,8 +15,9 @@ public class CreateAsetRuanganRequestDTO {
     @NotBlank(message = "Nama aset tidak boleh kosong")
     private String namaAset;
 
-    @NotBlank(message = "Link gambar tidak boleh kosong")
     private String gambarUrlAset;
+    
+    private org.springframework.web.multipart.MultipartFile gambarFile;
 
     @NotNull(message = "Kategori aset tidak boleh boleh kosong")
     private KategoriAset kategoriAset;

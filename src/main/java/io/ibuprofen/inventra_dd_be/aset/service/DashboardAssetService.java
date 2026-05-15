@@ -3,11 +3,14 @@ package io.ibuprofen.inventra_dd_be.Aset.service;
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import io.ibuprofen.inventra_dd_be.Aset.repository.AsetRepository;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.DashboardAssetResponseDTO;
-import io.ibuprofen.inventra_dd_be.Aset.restdto.response.PeminjamanUnitResponseDTO;
 import io.ibuprofen.inventra_dd_be.Aset.restdto.response.PeminjamanTrendResponseDTO;
+import io.ibuprofen.inventra_dd_be.Aset.restdto.response.PeminjamanUnitResponseDTO;
+import io.ibuprofen.inventra_dd_be.Aset.restdto.response.TopAsetResponseDTO;
 import io.ibuprofen.inventra_dd_be.PeminjamanAset.repository.PeminjamanAsetRepository;
+import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.repository.PenggantianBarangRusakRepo;
 import io.ibuprofen.inventra_dd_be.Profile.model.Role;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +27,9 @@ public class DashboardAssetService {
 
     @Autowired
     private PeminjamanAsetRepository peminjamanAsetRepository;
+
+    @Autowired
+    private PenggantianBarangRusakRepo penggantianBarangRusakRepo;
 
     public DashboardAssetResponseDTO getAsetSummary(User user, String unitOverride, String kategoriOverride) {
         String unitFilter = null;
@@ -61,7 +67,7 @@ public class DashboardAssetService {
         return result;
     }
 
-    public List<PeminjamanTrendResponseDTO> getPeminjamanTrend(User user, int year, Integer month, String unitOverride, String kategoriOverride) {
+    public List<PeminjamanTrendResponseDTO> getPeminjamanTrend(User user, Integer year, Integer month, String unitOverride, String kategoriOverride) {
         String unitFilter = null;
         if (user.getRole() == Role.SARPRAS || user.getRole() == Role.KEPSEK) {
             unitFilter = user.getUnit();
@@ -80,6 +86,22 @@ public class DashboardAssetService {
 
         List<Object[]> rawData;
         List<PeminjamanTrendResponseDTO> result = new ArrayList<>();
+
+        if (year == null || year == 0) {
+            // Yearly trend for last 5 years
+            int currentYear = java.time.LocalDate.now().getYear();
+            int startYear = currentYear - 4;
+            rawData = peminjamanAsetRepository.getYearlyTrend(unitFilter, startYear, kategoriFilter);
+            for (int y = startYear; y <= currentYear; y++) {
+                final int yearVal = y;
+                long count = rawData.stream()
+                        .filter(r -> ((Number) r[0]).intValue() == yearVal)
+                        .map(r -> ((Number) r[1]).longValue())
+                        .findFirst().orElse(0L);
+                result.add(new PeminjamanTrendResponseDTO(String.valueOf(y), count));
+            }
+            return result;
+        }
 
         if (month == null) {
             // Monthly trend
@@ -106,6 +128,56 @@ public class DashboardAssetService {
             }
         }
 
+        return result;
+    }
+
+    public List<TopAsetResponseDTO> getTopBorrowed(User user, Integer year, Integer month, String unitOverride, String kategoriOverride) {
+        String unitFilter = getUnitFilter(user, unitOverride);
+        String kategoriFilter = getKategoriFilter(kategoriOverride);
+        
+        List<Object[]> rawData = peminjamanAsetRepository.findTopBorrowed(unitFilter, year, month, kategoriFilter);
+        return mapToTopAsetDTO(rawData);
+    }
+
+    public List<TopAsetResponseDTO> getTopDamaged(User user, Integer year, Integer month, String unitOverride, String kategoriOverride) {
+        String unitFilter = getUnitFilter(user, unitOverride);
+        String kategoriFilter = getKategoriFilter(kategoriOverride);
+        
+        List<Object[]> rawData = penggantianBarangRusakRepo.findTopDamaged(unitFilter, year, month, kategoriFilter);
+        return mapToTopAsetDTO(rawData);
+    }
+
+    private String getUnitFilter(User user, String unitOverride) {
+        if (user.getRole() == Role.SARPRAS || user.getRole() == Role.KEPSEK) {
+            return user.getUnit();
+        } else if (unitOverride != null && !unitOverride.equals("Semua Unit")) {
+            return unitOverride;
+        }
+        return null;
+    }
+
+    private String getKategoriFilter(String kategoriOverride) {
+        if (kategoriOverride != null && !kategoriOverride.equals("Semua Kategori")) {
+            if (kategoriOverride.equals("Barang Habis Pakai")) return KategoriAset.BARANG_HABIS_PAKAI.name();
+            else if (kategoriOverride.equals("Barang Tidak Habis Pakai")) return KategoriAset.BARANG_TIDAK_HABIS_PAKAI.name();
+            else if (kategoriOverride.equals("Ruang Kelas")) return KategoriAset.RUANG_KELAS.name();
+            else if (kategoriOverride.equals("Ruang Non Kelas")) return KategoriAset.RUANG_NON_KELAS.name();
+        }
+        return null;
+    }
+
+    private List<TopAsetResponseDTO> mapToTopAsetDTO(List<Object[]> rawData) {
+        List<TopAsetResponseDTO> result = new ArrayList<>();
+        for (Object[] row : rawData) {
+            result.add(TopAsetResponseDTO.builder()
+                    .kodeAset((String) row[0])
+                    .namaAset((String) row[1])
+                    .merkAset((String) row[2])
+                    .unit((String) row[3])
+                    .value(row[4].toString() + " kali")
+                    .kategori((String) row[5])
+                    .build());
+        }
         return result;
     }
 }

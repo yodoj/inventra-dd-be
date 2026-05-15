@@ -19,15 +19,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
 import java.util.UUID;
 
 @RestController
@@ -107,16 +100,16 @@ public class AsetRestController {
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data aset ruangan retrieved successfully"));
     }
 
-    @PostMapping("/barang")
+    @PostMapping(value = "/barang", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
-    public ResponseEntity<?> createAsetBarang(@Valid @RequestBody CreateAsetBarangRequestDTO request) {
+    public ResponseEntity<?> createAsetBarang(@Valid @ModelAttribute CreateAsetBarangRequestDTO request) {
         AsetBarangResponseDTO result = asetService.createAsetBarang(request);
         return ResponseEntity.status(201).body(BaseResponseDTO.created(result, "Aset barang created successfully"));
     }
 
-    @PostMapping("/ruangan")
+    @PostMapping(value = "/ruangan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
-    public ResponseEntity<?> createAsetRuangan(@Valid @RequestBody CreateAsetRuanganRequestDTO request) {
+    public ResponseEntity<?> createAsetRuangan(@Valid @ModelAttribute CreateAsetRuanganRequestDTO request) {
         AsetRuanganResponseDTO result = asetService.createAsetRuangan(request);
         return ResponseEntity.status(201)
                 .body(BaseResponseDTO.created(result, "Aset ruangan created successfully"));
@@ -136,18 +129,18 @@ public class AsetRestController {
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan retrieved successfully"));
     }
 
-    @PutMapping("/barang/{id}")
+    @PutMapping(value = "/barang/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> updateAsetBarang(@PathVariable UUID id,
-            @Valid @RequestBody UpdateAsetBarangRequestDTO request) {
+            @Valid @ModelAttribute UpdateAsetBarangRequestDTO request) {
         AsetBarangResponseDTO result = asetService.updateAsetBarang(id, request);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset barang updated successfully"));
     }
 
-    @PutMapping("/ruangan/{id}")
+    @PutMapping(value = "/ruangan/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('SARPRAS', 'YAYASAN', 'ADMIN')")
     public ResponseEntity<?> updateAsetRuangan(@PathVariable UUID id,
-            @Valid @RequestBody UpdateAsetRuanganRequestDTO request) {
+            @Valid @ModelAttribute UpdateAsetRuanganRequestDTO request) {
         AsetRuanganResponseDTO result = asetService.updateAsetRuangan(id, request);
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Aset ruangan updated successfully"));
     }

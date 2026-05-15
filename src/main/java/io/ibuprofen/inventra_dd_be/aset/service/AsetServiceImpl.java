@@ -20,6 +20,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.io.IOException;
+import java.util.UUID;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -99,7 +105,13 @@ public class AsetServiceImpl implements AsetService {
 
         AsetBarang asetBarang = new AsetBarang();
         asetBarang.setNamaAset(request.getNamaAset());
-        asetBarang.setGambarUrlAset(request.getGambarUrlAset());
+
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            asetBarang.setGambarUrlAset("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            asetBarang.setGambarUrlAset(request.getGambarUrlAset());
+        }
+
         asetBarang.setKategoriAset(request.getKategoriAset());
         asetBarang.setStatusAset(request.getStatusAset());
         asetBarang.setKeteranganAset(request.getKeteranganAset());
@@ -143,7 +155,13 @@ public class AsetServiceImpl implements AsetService {
 
         AsetRuangan asetRuangan = new AsetRuangan();
         asetRuangan.setNamaAset(request.getNamaAset());
-        asetRuangan.setGambarUrlAset(request.getGambarUrlAset());
+        
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            asetRuangan.setGambarUrlAset("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            asetRuangan.setGambarUrlAset(request.getGambarUrlAset());
+        }
+
         asetRuangan.setKategoriAset(request.getKategoriAset());
         asetRuangan.setStatusAset(request.getStatusAset());
         asetRuangan.setKeteranganAset(request.getKeteranganAset());
@@ -198,7 +216,13 @@ public class AsetServiceImpl implements AsetService {
         }
 
         asetBarang.setNamaAset(request.getNamaAset());
-        asetBarang.setGambarUrlAset(request.getGambarUrlAset());
+
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            asetBarang.setGambarUrlAset("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            asetBarang.setGambarUrlAset(request.getGambarUrlAset());
+        }
+
         asetBarang.setKategoriAset(request.getKategoriAset());
         asetBarang.setStatusAset(request.getStatusAset());
         asetBarang.setKeteranganAset(request.getKeteranganAset());
@@ -266,7 +290,13 @@ public class AsetServiceImpl implements AsetService {
         }
 
         asetRuangan.setNamaAset(request.getNamaAset());
-        asetRuangan.setGambarUrlAset(request.getGambarUrlAset());
+
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            asetRuangan.setGambarUrlAset("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            asetRuangan.setGambarUrlAset(request.getGambarUrlAset());
+        }
+
         asetRuangan.setKategoriAset(request.getKategoriAset());
         asetRuangan.setStatusAset(request.getStatusAset());
         asetRuangan.setKeteranganAset(request.getKeteranganAset());
@@ -485,5 +515,19 @@ public class AsetServiceImpl implements AsetService {
 
     private int nullToZero(Integer val) {
         return (val != null) ? val : 0;
+    }
+
+    private String saveFileToLocal(MultipartFile file) {
+        try {
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename().replaceAll("\\s+", "_");
+            Path root = Paths.get("uploads/assets");
+            if (!Files.exists(root)) {
+                Files.createDirectories(root);
+            }
+            Files.copy(file.getInputStream(), root.resolve(filename), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            return filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
+        }
     }
 }
