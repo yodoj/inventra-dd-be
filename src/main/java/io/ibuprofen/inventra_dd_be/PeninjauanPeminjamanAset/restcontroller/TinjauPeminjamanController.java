@@ -29,9 +29,12 @@ public class TinjauPeminjamanController {
             @RequestParam(value = "unitTujuan", required = false) String unit,
             @RequestParam(value = "tanggalPeminjaman", required = false) 
                 @org.springframework.format.annotation.DateTimeFormat(pattern = "dd-MM-yyyy") java.time.LocalDate tanggal,
-            @RequestParam(value = "kategoriAset", required = false) String kategori) {
+            @RequestParam(value = "tanggalPengembalian", required = false) 
+                @org.springframework.format.annotation.DateTimeFormat(pattern = "dd-MM-yyyy") java.time.LocalDate tanggalPengembalian,
+            @RequestParam(value = "kategoriAset", required = false) String kategori,
+            @RequestParam(value = "search", required = false) String search) {
         
-        List<String> allowedParams = List.of("statusPeminjaman", "unitTujuan", "tanggalPeminjaman", "kategoriAset");
+        List<String> allowedParams = List.of("statusPeminjaman", "unitTujuan", "tanggalPeminjaman", "tanggalPengembalian", "kategoriAset", "search");
         for (String paramName : allParams.keySet()) {
             if (!allowedParams.contains(paramName)) {
                 throw new IllegalArgumentException("Parameter '" + paramName + "' tidak dikenali. Gunakan: " + allowedParams);
@@ -46,8 +49,10 @@ public class TinjauPeminjamanController {
                 throw new IllegalArgumentException("Status Peminjaman tidak valid.");
             }
         }
+        
+        String searchParam = (search == null || search.isEmpty()) ? null : "%" + search.trim().toLowerCase() + "%";
 
-        List<TinjauPeminjamanResponseDTO> result = tinjauPeminjamanService.getAll(status, unit, tanggal, kategori);     
+        List<TinjauPeminjamanResponseDTO> result = tinjauPeminjamanService.getAll(status, unit, tanggal, tanggalPengembalian, kategori, searchParam);     
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data peninjauan peminjaman aset berhasil diambil"));
     }
 
