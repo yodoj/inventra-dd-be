@@ -6,6 +6,9 @@ import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.BreakdownUnitR
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TopBiayaResponseDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TopDashboardResponseDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TotalPengadaanResponseDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.BiayaPengadaanChartResponseDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.JumlahAsetChartResponseDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TopCepatHabisResponseDTO;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -102,4 +105,68 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         Pageable pageable
     );
 
+    // Bar chart estimasi biaya pengadaan per tahun
+    @Query("""
+        SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.BiayaPengadaanChartResponseDTO(
+            CAST(EXTRACT(YEAR FROM p.waktuPengadaan) AS integer),
+            COALESCE(SUM(p.qty * p.estimasiHarga), 0)
+        )
+        FROM PengadaanAset p
+        WHERE (:unit IS NULL OR p.unit = :unit)
+        AND p.statusPengadaan = 'DIBELI'
+        GROUP BY EXTRACT(YEAR FROM p.waktuPengadaan)
+        ORDER BY EXTRACT(YEAR FROM p.waktuPengadaan)
+    """)
+    List<BiayaPengadaanChartResponseDTO> getBiayaPengadaanPerTahun(
+        @Param("unit") String unit
+    );
+
+
+    // Bar chart jumlah aset per tahun
+    @Query("""
+        SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.JumlahAsetChartResponseDTO(
+            CAST(EXTRACT(YEAR FROM p.waktuPengadaan) AS integer),
+            COALESCE(SUM(p.qty), 0)
+        )
+        FROM PengadaanAset p
+        WHERE (:unit IS NULL OR p.unit = :unit)
+        AND p.statusPengadaan = 'DIBELI'
+        GROUP BY EXTRACT(YEAR FROM p.waktuPengadaan)
+        ORDER BY EXTRACT(YEAR FROM p.waktuPengadaan)
+    """)
+    List<JumlahAsetChartResponseDTO> getJumlahAsetPerTahun(
+        @Param("unit") String unit
+    );
+
+    // Top 5 aset paling cepat habis
+    @Query("""
+        SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TopCepatHabisResponseDTO(
+
+            LOWER(p.namaAset),
+
+            COUNT(p),
+
+            COALESCE(SUM(p.qty), 0)
+
+        )
+
+        FROM PengadaanAset p
+
+        WHERE EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun
+        AND p.kategoriAset = io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_HABIS_PAKAI
+        AND p.statusPengadaan = 'DIBELI'
+        AND (:unit IS NULL OR p.unit = :unit)
+
+        GROUP BY LOWER(p.namaAset)
+
+        ORDER BY COUNT(p) DESC, SUM(p.qty) DESC
+    """)
+    List<TopCepatHabisResponseDTO> getTop5CepatHabis(
+
+        @Param("tahun") Integer tahun,
+
+        @Param("unit") String unit,
+
+        Pageable pageable
+    );
 }
