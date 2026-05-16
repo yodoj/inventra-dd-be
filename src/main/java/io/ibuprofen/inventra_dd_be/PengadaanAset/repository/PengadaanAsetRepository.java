@@ -3,6 +3,7 @@ package io.ibuprofen.inventra_dd_be.PengadaanAset.repository;
 import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.model.PengadaanAset;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.BreakdownUnitResponseDTO;
+import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.LaporanPengadaanResponseDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TopBiayaResponseDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TopDashboardResponseDTO;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.TotalPengadaanResponseDTO;
@@ -96,6 +97,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         AND p.statusPengadaan = 'DIBELI'
         GROUP BY LOWER(p.namaAset)
         ORDER BY SUM(p.qty * p.estimasiHarga) DESC
+        LIMIT 5
     """)
     List<TopBiayaResponseDTO> getTop5Biaya(
         @Param("tahun") Integer tahun,
@@ -153,6 +155,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         FROM PengadaanAset p
 
         WHERE EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun
+        AND (:bulan IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
         AND p.kategoriAset = io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_HABIS_PAKAI
         AND p.statusPengadaan = 'DIBELI'
         AND (:unit IS NULL OR p.unit = :unit)
@@ -164,9 +167,95 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
     List<TopCepatHabisResponseDTO> getTop5CepatHabis(
 
         @Param("tahun") Integer tahun,
-
+        @Param("bulan") Integer bulan,
         @Param("unit") String unit,
 
         Pageable pageable
     );
+    @Query("""
+        SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.LaporanPengadaanResponseDTO(
+            p.waktuPengajuan,
+            p.idPengadaan,
+            p.namaAset,
+            p.merk,
+            p.qty,
+            p.waktuPengadaan,
+            p.estimasiHarga,
+            p.kategoriAset,
+            p.unit,
+            p.statusPengadaan,
+            t.buktiPembelian,
+            t.alasan
+        )
+        FROM PengadaanAset p
+        LEFT JOIN TinjauPengadaan t 
+            ON t.pengadaan.idPengadaan = p.idPengadaan
+            AND t.updatedAt = (
+                SELECT MAX(t2.updatedAt)
+                FROM TinjauPengadaan t2
+                WHERE t2.pengadaan.idPengadaan = p.idPengadaan
+            )
+        """)
+        List<LaporanPengadaanResponseDTO> findAllLaporan();
+
+        @Query("""
+            SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.LaporanPengadaanResponseDTO(
+                p.waktuPengajuan,
+                p.idPengadaan,
+                p.namaAset,
+                p.merk,
+                p.qty,
+                p.waktuPengadaan,
+                p.estimasiHarga,
+                p.kategoriAset,
+                p.unit,
+                p.statusPengadaan,
+                t.buktiPembelian,
+                t.alasan
+            )
+            FROM PengadaanAset p
+            LEFT JOIN TinjauPengadaan t 
+            ON t.pengadaan.idPengadaan = p.idPengadaan
+            AND t.updatedAt = (
+                SELECT MAX(t2.updatedAt)
+                FROM TinjauPengadaan t2
+                WHERE t2.pengadaan.idPengadaan = p.idPengadaan)
+            WHERE p.unit = :unit
+            """)
+            List<LaporanPengadaanResponseDTO> findLaporanByUnit(@Param("unit") String unit);
+
+            @Query(value = """
+                SELECT * FROM pengadaan_aset
+                WHERE (:status IS NULL OR status_pengadaan = :status)
+                AND (:unit IS NULL OR unit = :unit)
+                AND (
+                    :search IS NULL OR
+                    LOWER(nama_aset) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                    LOWER(merk) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                    LOWER(alasan) LIKE LOWER(CONCAT('%', :search, '%'))
+                )
+                ORDER BY created_at DESC
+                LIMIT :limit OFFSET :offset
+                """, nativeQuery = true)
+                List<LaporanPengadaanResponseDTO> findAllWithFilter(
+                    String status,
+                    String search,
+                    String unit,
+                    int limit,
+                    int offset
+                );
+
+            @Query(value = """
+                SELECT COUNT(*) FROM pengadaan_aset
+                WHERE (:status IS NULL OR status_pengadaan = :status)
+                AND (:unit IS NULL OR unit = :unit)
+                AND (
+                    :search IS NULL OR
+                    LOWER(nama_aset) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                    LOWER(merk) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                    LOWER(alasan) LIKE LOWER(CONCAT('%', :search, '%'))
+                )
+                """, nativeQuery = true)
+                long countAllWithFilter(String status, String search, String unit);
+
 }

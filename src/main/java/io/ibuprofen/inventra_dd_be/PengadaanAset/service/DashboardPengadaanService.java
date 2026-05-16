@@ -2,10 +2,10 @@ package io.ibuprofen.inventra_dd_be.PengadaanAset.service;
 
 import io.ibuprofen.inventra_dd_be.PengadaanAset.repository.PengadaanAsetRepository;
 import io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.*;
-import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
 import io.ibuprofen.inventra_dd_be.Profile.repository.UserRepository;
+import io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -108,14 +108,14 @@ public class DashboardPengadaanService {
             String unit
     ) {
 
-        // List<TopPengadaanResponseDTO> topPengadaan =
-        //         getTopPengadaan(tahun, bulan, kategori, unit);
+        List<TopCepatHabisResponseDTO> topPengadaan =
+                getTop5CepatHabis(tahun, bulan, unit);
 
         List<TopBiayaResponseDTO> topBiaya =
                 getTop5Biaya(tahun, bulan, kategori, unit);
 
         return new TopDashboardResponseDTO(
-                // topPengadaan,
+                topPengadaan,
                 topBiaya
         );
     }
@@ -245,7 +245,7 @@ public class DashboardPengadaanService {
     }
 
     // Fungsi untuk mengambil top 5 aset paling cepat habis
-    public List<TopCepatHabisResponseDTO> getTop5CepatHabis(Integer tahun, String unit) {
+    public List<TopCepatHabisResponseDTO> getTop5CepatHabis(Integer tahun, Integer bulan, String unit) {
         UserDetailsImpl userDetails = getCurrentUser();
         User user = userRepository.findById(userDetails.getId()).orElse(null);
 
@@ -276,6 +276,7 @@ public class DashboardPengadaanService {
 
         return repo.getTop5CepatHabis(
                 tahun,
+                bulan,
                 unit,
                 PageRequest.of(0, 5)
         );
