@@ -57,7 +57,9 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
             StatusPeminjaman statusPeminjaman, 
             String unitTujuan, 
             LocalDate tanggalPeminjaman, 
-            String kategoriAset) {
+            LocalDate tanggalPengembalian,
+            String kategoriAset,
+            String search) {
         
         UserDetailsImpl userDetails = getCurrentUser();
         boolean isAdmin = userDetails.getAuthorities().stream()
@@ -90,7 +92,9 @@ public class TinjauPeminjamanServiceImpl implements TinjauPeminjamanService {
             statusPeminjaman, 
             unitTerpilih, 
             tanggalPeminjaman, 
-            kategoriAset
+            tanggalPengembalian,
+            kategoriAset,
+            search
         );
 
         return peminjamanRepository.findAll(kriteria).stream()
