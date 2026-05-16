@@ -153,4 +153,6 @@ public interface PeminjamanAsetRepository extends JpaRepository<PeminjamanAset, 
             @Param("year") Integer year,
             @Param("month") Integer month,
             @Param("kategori") String kategori);
+
+    long countByStatusPeminjaman(StatusPeminjaman status);
 }
