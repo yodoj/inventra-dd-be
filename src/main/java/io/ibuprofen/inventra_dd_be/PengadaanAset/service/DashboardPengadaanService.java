@@ -108,14 +108,14 @@ public class DashboardPengadaanService {
             String unit
     ) {
 
-        // List<TopPengadaanResponseDTO> topPengadaan =
-        //         getTopPengadaan(tahun, bulan, kategori, unit);
+        List<TopCepatHabisResponseDTO> topPengadaan =
+                getTop5CepatHabis(tahun, bulan, unit);
 
         List<TopBiayaResponseDTO> topBiaya =
                 getTop5Biaya(tahun, bulan, kategori, unit);
 
         return new TopDashboardResponseDTO(
-                // topPengadaan,
+                topPengadaan,
                 topBiaya
         );
     }
@@ -245,7 +245,7 @@ public class DashboardPengadaanService {
     }
 
     // Fungsi untuk mengambil top 5 aset paling cepat habis
-    public List<TopCepatHabisResponseDTO> getTop5CepatHabis(Integer tahun, String unit) {
+    public List<TopCepatHabisResponseDTO> getTop5CepatHabis(Integer tahun, Integer bulan, String unit) {
         UserDetailsImpl userDetails = getCurrentUser();
         User user = userRepository.findById(userDetails.getId()).orElse(null);
 
@@ -276,6 +276,7 @@ public class DashboardPengadaanService {
 
         return repo.getTop5CepatHabis(
                 tahun,
+                bulan,
                 unit,
                 PageRequest.of(0, 5)
         );

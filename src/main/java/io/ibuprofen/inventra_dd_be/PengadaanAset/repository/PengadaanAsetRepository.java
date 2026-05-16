@@ -97,6 +97,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         AND p.statusPengadaan = 'DIBELI'
         GROUP BY LOWER(p.namaAset)
         ORDER BY SUM(p.qty * p.estimasiHarga) DESC
+        LIMIT 5
     """)
     List<TopBiayaResponseDTO> getTop5Biaya(
         @Param("tahun") Integer tahun,
@@ -154,6 +155,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         FROM PengadaanAset p
 
         WHERE EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun
+        AND (:bulan IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
         AND p.kategoriAset = io.ibuprofen.inventra_dd_be.Aset.model.KategoriAset.BARANG_HABIS_PAKAI
         AND p.statusPengadaan = 'DIBELI'
         AND (:unit IS NULL OR p.unit = :unit)
@@ -165,7 +167,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
     List<TopCepatHabisResponseDTO> getTop5CepatHabis(
 
         @Param("tahun") Integer tahun,
-
+        @Param("bulan") Integer bulan,
         @Param("unit") String unit,
 
         Pageable pageable

@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TopDashboardResponseDTO {
-    // private List<TopPengadaanResponseDTO> topPengadaan;
+    private List<TopCepatHabisResponseDTO> topPengadaan;
     private List<TopBiayaResponseDTO> topBiaya;
 }

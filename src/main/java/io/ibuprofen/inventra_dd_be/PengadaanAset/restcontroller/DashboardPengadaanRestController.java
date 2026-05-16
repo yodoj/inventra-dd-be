@@ -123,6 +123,7 @@ public class DashboardPengadaanRestController {
         @PreAuthorize("hasAnyAuthority('YAYASAN','KEPSEK','SARPRAS', 'ADMIN')")
         public ResponseEntity<?> getTopCepatHabis(
                 @RequestParam(required = false) Integer tahun,
+                @RequestParam(required = false) Integer bulan,
                 @RequestParam(required = false) String unit,
                 HttpServletRequest request
         ) {
@@ -132,6 +133,7 @@ public class DashboardPengadaanRestController {
                 List<TopCepatHabisResponseDTO> result =
                         dashboardService.getTop5CepatHabis(
                                 tahun,
+                                bulan,
                                 unit
                         );
 
