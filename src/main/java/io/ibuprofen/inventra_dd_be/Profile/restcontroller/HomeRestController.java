@@ -31,7 +31,7 @@ public class HomeRestController {
     public ResponseEntity<?> getHomeDetails() {
         Map<String, Object> responseData = new HashMap<>();
 
-        long totalAsetBarang = asetBarangRepository.count();
+        long totalAsetBarang = asetBarangRepository.sumQtyAset();
         long totalAsetRuangan = asetRuanganRepository.count();
         long totalAset = totalAsetBarang + totalAsetRuangan;
 

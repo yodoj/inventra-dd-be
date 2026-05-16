@@ -42,4 +42,7 @@ public interface AsetBarangRepository extends JpaRepository<AsetBarang, UUID> {
                "(:unit IS NULL OR :unit = '' OR ab.unit = :unit) AND " +
                "ab.statusAset = 'TERSEDIA' AND ab.qtyTersedia > 0")
         java.util.List<AsetBarang> findBorrowableInUnit(@Param("unit") String unit);
+
+        @Query("SELECT COALESCE(SUM(ab.qtyAset), 0) FROM AsetBarang ab")
+        long sumQtyAset();
 }
