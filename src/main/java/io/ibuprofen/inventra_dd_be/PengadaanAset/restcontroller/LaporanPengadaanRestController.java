@@ -30,13 +30,15 @@ public class LaporanPengadaanRestController {
             @RequestParam(required = false) Integer tahun,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String dateField,
             @RequestParam(defaultValue = "waktuPengajuan") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         LaporanPengadaanPageResponseDTO result = laporanService.getLaporanPengadaan(
-                search, status, kategori, unit, bulan, tahun, from, to, sortBy, direction, page, size);
+                search, status, kategori, unit, bulan, tahun, from, to, dateField,
+                sortBy, direction, page, size);
 
         return ResponseEntity.ok(
                 BaseResponseDTO.ok(result, "Data laporan pengadaan berhasil diambil")

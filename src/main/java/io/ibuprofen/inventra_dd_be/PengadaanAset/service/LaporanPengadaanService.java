@@ -26,6 +26,10 @@ public class LaporanPengadaanService {
     private static final List<String> VALID_SORT_FIELDS =
             List.of("waktuPengajuan", "namaAset", "estimasiHarga");
 
+    private static final List<String> VALID_DATE_FIELDS =
+            List.of("waktu_pengajuan", "tanggal_pengadaan");
+    private static final String DEFAULT_DATE_FIELD = "waktu_pengajuan";
+
     @Autowired
     private PengadaanAsetRepository repo;
 
@@ -46,6 +50,7 @@ public class LaporanPengadaanService {
             Integer tahun,
             LocalDate from,
             LocalDate to,
+            String dateField,
             String sortBy,
             String direction,
             int page,
@@ -66,6 +71,11 @@ public class LaporanPengadaanService {
                 && !direction.equalsIgnoreCase("ASC") && !direction.equalsIgnoreCase("DESC")) {
             throw new IllegalArgumentException("Parameter 'direction' harus 'ASC' atau 'DESC'");
         }
+        if (dateField != null && !dateField.isBlank() && !VALID_DATE_FIELDS.contains(dateField)) {
+            throw new IllegalArgumentException(
+                    "Parameter 'dateField' tidak valid. Allowed: " + VALID_DATE_FIELDS);
+        }
+        String dateFieldParam = (dateField != null && !dateField.isBlank()) ? dateField : DEFAULT_DATE_FIELD;
 
         UserDetailsImpl userDetails = getCurrentUser();
         User user = userRepository.findById(userDetails.getId())
@@ -83,8 +93,9 @@ public class LaporanPengadaanService {
 
         String kategori = (kategoriStr != null && !kategoriStr.isBlank()) ? kategoriStr.trim().toUpperCase() : null;
 
-        LocalDateTime fromDate = (from != null) ? from.atStartOfDay() : null;
-        LocalDateTime toDate = (to != null) ? to.atTime(23, 59, 59) : null;
+        // Dua pair tanggal: LocalDateTime untuk waktuPengajuan, LocalDate untuk waktuPengadaan.
+        LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime toDateTime = (to != null) ? to.atTime(23, 59, 59) : null;
 
         Sort sort = Sort.by(
                 "ASC".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC,
@@ -97,12 +108,12 @@ public class LaporanPengadaanService {
         if (role.equalsIgnoreCase("YAYASAN") || role.equalsIgnoreCase("ADMIN")) {
             result = repo.findAllLaporanFiltered(
                     searchParam, statusParam, kategori, filterUnitParam,
-                    bulan, tahun, fromDate, toDate, pageable);
+                    bulan, tahun, fromDateTime, toDateTime, from, to, dateFieldParam, pageable);
         } else if (role.equalsIgnoreCase("KEPSEK") || role.equalsIgnoreCase("SARPRAS")) {
             // unit param from request is ignored — always scoped to the user's own unit
             result = repo.findLaporanByUnitFiltered(
                     userUnit, searchParam, statusParam, kategori,
-                    bulan, tahun, fromDate, toDate, pageable);
+                    bulan, tahun, fromDateTime, toDateTime, from, to, dateFieldParam, pageable);
         } else {
             throw new AccessDeniedException("Unauthorized role");
         }
