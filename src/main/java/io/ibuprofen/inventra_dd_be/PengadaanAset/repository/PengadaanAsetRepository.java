@@ -18,6 +18,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.List;
@@ -206,10 +207,14 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
           AND (:status IS NULL OR p.statusPengadaan = :status)
           AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
           AND (:filterUnit IS NULL OR p.unit = :filterUnit)
-          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
-          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
-          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
-          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:fromDateTime AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDateTime)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:toDateTime AS timestamp) IS NULL OR p.waktuPengajuan <= :toDateTime)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:fromDateOnly AS date) IS NULL OR p.waktuPengadaan >= :fromDateOnly)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:toDateOnly AS date) IS NULL OR p.waktuPengadaan <= :toDateOnly)
         """,
         countQuery = """
         SELECT COUNT(p)
@@ -229,10 +234,14 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
           AND (:status IS NULL OR p.statusPengadaan = :status)
           AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
           AND (:filterUnit IS NULL OR p.unit = :filterUnit)
-          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
-          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
-          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
-          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:fromDateTime AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDateTime)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:toDateTime AS timestamp) IS NULL OR p.waktuPengajuan <= :toDateTime)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:fromDateOnly AS date) IS NULL OR p.waktuPengadaan >= :fromDateOnly)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:toDateOnly AS date) IS NULL OR p.waktuPengadaan <= :toDateOnly)
         """)
     Page<LaporanPengadaanResponseDTO> findAllLaporanFiltered(
             @Param("search") String search,
@@ -241,8 +250,11 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
             @Param("filterUnit") String filterUnit,
             @Param("bulan") Integer bulan,
             @Param("tahun") Integer tahun,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate,
+            @Param("fromDateTime") LocalDateTime fromDateTime,
+            @Param("toDateTime") LocalDateTime toDateTime,
+            @Param("fromDateOnly") LocalDate fromDateOnly,
+            @Param("toDateOnly") LocalDate toDateOnly,
+            @Param("dateField") String dateField,
             Pageable pageable);
 
     @Query(value = """
@@ -277,10 +289,14 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
                OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
           AND (:status IS NULL OR p.statusPengadaan = :status)
           AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
-          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
-          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
-          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
-          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:fromDateTime AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDateTime)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:toDateTime AS timestamp) IS NULL OR p.waktuPengajuan <= :toDateTime)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:fromDateOnly AS date) IS NULL OR p.waktuPengadaan >= :fromDateOnly)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:toDateOnly AS date) IS NULL OR p.waktuPengadaan <= :toDateOnly)
         """,
         countQuery = """
         SELECT COUNT(p)
@@ -300,10 +316,14 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
                OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
           AND (:status IS NULL OR p.statusPengadaan = :status)
           AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
-          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
-          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
-          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
-          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:fromDateTime AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDateTime)
+          AND (:dateField = 'tanggal_pengadaan' OR CAST(:toDateTime AS timestamp) IS NULL OR p.waktuPengajuan <= :toDateTime)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:fromDateOnly AS date) IS NULL OR p.waktuPengadaan >= :fromDateOnly)
+          AND (:dateField <> 'tanggal_pengadaan' OR CAST(:toDateOnly AS date) IS NULL OR p.waktuPengadaan <= :toDateOnly)
         """)
     Page<LaporanPengadaanResponseDTO> findLaporanByUnitFiltered(
             @Param("unit") String unit,
@@ -312,8 +332,11 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
             @Param("kategori") String kategori,
             @Param("bulan") Integer bulan,
             @Param("tahun") Integer tahun,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate,
+            @Param("fromDateTime") LocalDateTime fromDateTime,
+            @Param("toDateTime") LocalDateTime toDateTime,
+            @Param("fromDateOnly") LocalDate fromDateOnly,
+            @Param("toDateOnly") LocalDate toDateOnly,
+            @Param("dateField") String dateField,
             Pageable pageable);
 
 }
