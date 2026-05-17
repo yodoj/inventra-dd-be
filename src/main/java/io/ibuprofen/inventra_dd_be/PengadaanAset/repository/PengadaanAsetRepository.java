@@ -18,6 +18,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.List;
 
@@ -92,7 +93,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         FROM PengadaanAset p
         WHERE (:tahun IS NULL OR EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun)
         AND (:bulan IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
-        AND (:kategori IS NULL OR p.kategoriAset = :kategori)
+        AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
         AND (:unit IS NULL OR p.unit = :unit)
         AND p.statusPengadaan = 'DIBELI'
         GROUP BY LOWER(p.namaAset)
@@ -172,10 +173,11 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
 
         Pageable pageable
     );
-    @Query("""
+
+    @Query(value = """
         SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.LaporanPengadaanResponseDTO(
             p.waktuPengajuan,
-            p.idPengadaan,
+            p.namaPengaju,
             p.namaAset,
             p.merk,
             p.qty,
@@ -185,77 +187,133 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
             p.unit,
             p.statusPengadaan,
             t.buktiPembelian,
-            t.alasan
+            t.alasan,
+            t.harga
         )
         FROM PengadaanAset p
-        LEFT JOIN TinjauPengadaan t 
+        LEFT JOIN TinjauPengadaan t
             ON t.pengadaan.idPengadaan = p.idPengadaan
             AND t.updatedAt = (
                 SELECT MAX(t2.updatedAt)
                 FROM TinjauPengadaan t2
                 WHERE t2.pengadaan.idPengadaan = p.idPengadaan
             )
-        """)
-        List<LaporanPengadaanResponseDTO> findAllLaporan();
-
-        @Query("""
-            SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.LaporanPengadaanResponseDTO(
-                p.waktuPengajuan,
-                p.idPengadaan,
-                p.namaAset,
-                p.merk,
-                p.qty,
-                p.waktuPengadaan,
-                p.estimasiHarga,
-                p.kategoriAset,
-                p.unit,
-                p.statusPengadaan,
-                t.buktiPembelian,
-                t.alasan
-            )
-            FROM PengadaanAset p
-            LEFT JOIN TinjauPengadaan t 
+        WHERE (CAST(:search AS string) IS NULL
+               OR CAST(FUNCTION('replace', LOWER(p.namaAset), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.namaPengaju), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
+          AND (:status IS NULL OR p.statusPengadaan = :status)
+          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (:filterUnit IS NULL OR p.unit = :filterUnit)
+          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
+          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+        """,
+        countQuery = """
+        SELECT COUNT(p)
+        FROM PengadaanAset p
+        LEFT JOIN TinjauPengadaan t
             ON t.pengadaan.idPengadaan = p.idPengadaan
             AND t.updatedAt = (
                 SELECT MAX(t2.updatedAt)
                 FROM TinjauPengadaan t2
-                WHERE t2.pengadaan.idPengadaan = p.idPengadaan)
-            WHERE p.unit = :unit
-            """)
-            List<LaporanPengadaanResponseDTO> findLaporanByUnit(@Param("unit") String unit);
+                WHERE t2.pengadaan.idPengadaan = p.idPengadaan
+            )
+        WHERE (CAST(:search AS string) IS NULL
+               OR CAST(FUNCTION('replace', LOWER(p.namaAset), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.namaPengaju), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
+          AND (:status IS NULL OR p.statusPengadaan = :status)
+          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (:filterUnit IS NULL OR p.unit = :filterUnit)
+          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
+          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+        """)
+    Page<LaporanPengadaanResponseDTO> findAllLaporanFiltered(
+            @Param("search") String search,
+            @Param("status") String status,
+            @Param("kategori") String kategori,
+            @Param("filterUnit") String filterUnit,
+            @Param("bulan") Integer bulan,
+            @Param("tahun") Integer tahun,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            Pageable pageable);
 
-            @Query(value = """
-                SELECT * FROM pengadaan_aset
-                WHERE (:status IS NULL OR status_pengadaan = :status)
-                AND (:unit IS NULL OR unit = :unit)
-                AND (
-                    :search IS NULL OR
-                    LOWER(nama_aset) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                    LOWER(merk) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                    LOWER(alasan) LIKE LOWER(CONCAT('%', :search, '%'))
-                )
-                ORDER BY created_at DESC
-                LIMIT :limit OFFSET :offset
-                """, nativeQuery = true)
-                List<LaporanPengadaanResponseDTO> findAllWithFilter(
-                    String status,
-                    String search,
-                    String unit,
-                    int limit,
-                    int offset
-                );
-
-            @Query(value = """
-                SELECT COUNT(*) FROM pengadaan_aset
-                WHERE (:status IS NULL OR status_pengadaan = :status)
-                AND (:unit IS NULL OR unit = :unit)
-                AND (
-                    :search IS NULL OR
-                    LOWER(nama_aset) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                    LOWER(merk) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                    LOWER(alasan) LIKE LOWER(CONCAT('%', :search, '%'))
-                )
-                """, nativeQuery = true)
-                long countAllWithFilter(String status, String search, String unit);
+    @Query(value = """
+        SELECT new io.ibuprofen.inventra_dd_be.PengadaanAset.restdto.response.LaporanPengadaanResponseDTO(
+            p.waktuPengajuan,
+            p.namaPengaju,
+            p.namaAset,
+            p.merk,
+            p.qty,
+            p.waktuPengadaan,
+            p.estimasiHarga,
+            p.kategoriAset,
+            p.unit,
+            p.statusPengadaan,
+            t.buktiPembelian,
+            t.alasan,
+            t.harga
+        )
+        FROM PengadaanAset p
+        LEFT JOIN TinjauPengadaan t
+            ON t.pengadaan.idPengadaan = p.idPengadaan
+            AND t.updatedAt = (
+                SELECT MAX(t2.updatedAt)
+                FROM TinjauPengadaan t2
+                WHERE t2.pengadaan.idPengadaan = p.idPengadaan
+            )
+        WHERE p.unit = :unit
+          AND (CAST(:search AS string) IS NULL
+               OR CAST(FUNCTION('replace', LOWER(p.namaAset), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.namaPengaju), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
+          AND (:status IS NULL OR p.statusPengadaan = :status)
+          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
+          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+        """,
+        countQuery = """
+        SELECT COUNT(p)
+        FROM PengadaanAset p
+        LEFT JOIN TinjauPengadaan t
+            ON t.pengadaan.idPengadaan = p.idPengadaan
+            AND t.updatedAt = (
+                SELECT MAX(t2.updatedAt)
+                FROM TinjauPengadaan t2
+                WHERE t2.pengadaan.idPengadaan = p.idPengadaan
+            )
+        WHERE p.unit = :unit
+          AND (CAST(:search AS string) IS NULL
+               OR CAST(FUNCTION('replace', LOWER(p.namaAset), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.namaPengaju), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
+               OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
+          AND (:status IS NULL OR p.statusPengadaan = :status)
+          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
+          AND (CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
+          AND (CAST(:fromDate AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDate)
+          AND (CAST(:toDate AS timestamp) IS NULL OR p.waktuPengajuan <= :toDate)
+        """)
+    Page<LaporanPengadaanResponseDTO> findLaporanByUnitFiltered(
+            @Param("unit") String unit,
+            @Param("search") String search,
+            @Param("status") String status,
+            @Param("kategori") String kategori,
+            @Param("bulan") Integer bulan,
+            @Param("tahun") Integer tahun,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            Pageable pageable);
 
 }
