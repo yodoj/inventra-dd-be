@@ -669,7 +669,10 @@ public class UserManagementServiceImpl implements UserManagementService {
         User targetUser = userRepository.findByIdAndIsDeletedFalse(targetId)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        // Soft delete — no self-delete block (ADMIN can delete self)
+        if (targetId.equals(adminId)) {
+            throw new AccessDeniedException("Admin tidak dapat menghapus akunnya sendiri");
+        }
+
         targetUser.setIsDeleted(true);
         targetUser.setDeletedAt(LocalDateTime.now());
         targetUser.setDeletedBy(adminId);
