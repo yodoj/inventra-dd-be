@@ -12,25 +12,19 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserPerUnitResponseDTO {
-    
+public class SarprasLintasUnitResponseDTO {
+
     private UUID id;
-    
+
     private String email;
-    
+
     @JsonProperty("nama_lengkap")
     private String name;
-    
+
     @JsonProperty("nomor_telepon")
     private String phoneNumber;
-    
+
     private String role;
-    
+
     private String unit;
-    
-    private String nisn;
-
-    private String kelas;
-
-    private String password;
 }
