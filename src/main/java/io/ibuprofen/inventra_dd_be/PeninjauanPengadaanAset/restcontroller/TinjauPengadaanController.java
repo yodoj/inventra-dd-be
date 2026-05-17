@@ -10,10 +10,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.PembelianRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.request.tinjauPengadaanRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.restdto.response.tinjauPengadaanResponseDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.service.TinjauPengadaanService;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
+import io.ibuprofen.inventra_dd_be.PenggantianBarangRusak.restdto.UpdatePenggantianBarangRusakRequestDTO;
 import io.ibuprofen.inventra_dd_be.PeninjauanPengadaanAset.model.Status;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,13 +69,10 @@ public class TinjauPengadaanController {
   @PreAuthorize("hasAnyAuthority('YAYASAN','ADMIN')")
   public BaseResponseDTO<tinjauPengadaanResponseDTO> beli(
           @PathVariable UUID pengadaanId,
-          @RequestParam("harga") Long harga,
-          @RequestParam("buktiPembelian") MultipartFile file) {
+          @Valid @ModelAttribute PembelianRequestDTO request) {
       
-      var result = tinjauService.beli(pengadaanId, harga, file);
+      tinjauPengadaanResponseDTO result = tinjauService.beli(pengadaanId, request, request.getBuktiPembelian());
       
       return BaseResponseDTO.ok(result, "Pembelian berhasil diproses dan aset telah dicatat");
   }
-
-  
 }

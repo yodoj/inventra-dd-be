@@ -27,4 +27,10 @@ public class UserPerUnitResponseDTO {
     private String role;
     
     private String unit;
+    
+    private String nisn;
+
+    private String kelas;
+
+    private String password;
 }

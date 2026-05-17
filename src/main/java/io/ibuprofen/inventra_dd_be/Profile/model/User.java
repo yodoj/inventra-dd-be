@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 import java.util.UUID;
 
@@ -29,7 +30,7 @@ public class User {
 
     @NotBlank
     @Email
-    @Column(unique = true)
+    @Column
     private String email;
 
     @NotBlank
@@ -47,4 +48,14 @@ public class User {
     private String nisn;
 
     private String kelas;
+
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_by")
+    private java.util.UUID deletedBy;
 }
