@@ -314,14 +314,42 @@ public class UserRestController {
 
             // Validasi authorization:
             // - Diizinkan jika requester adalah pemilik akun (SELF)
-            // - Atau jika requester adalah SUPERADMIN
+            // - Atau jika requester adalah SUPERADMIN (ADMIN role)
+            // - Atau jika requester adalah SARPRAS dan target user berada di unit yang sama
             boolean isSelf = requesterId.equals(targetUserId);
             boolean isSuperAdmin = "ADMIN".equals(requesterRole);
+            boolean isSarpras = "SARPRAS".equals(requesterRole);
 
             if (!isSelf && !isSuperAdmin) {
-                return ResponseEntity.status(403).body(
-                    BaseResponseDTO.error(403, "Forbidden: You can only access your own password history")
-                );
+                if (!isSarpras) {
+                    return ResponseEntity.status(403).body(
+                        BaseResponseDTO.error(403, "Forbidden: You can only access your own password history")
+                    );
+                }
+
+                // SARPRAS: hanya bisa lihat history user dalam unit yang sama
+                Optional<User> requesterOpt = userRepository.findById(requesterId);
+                Optional<User> targetOpt = userRepository.findByIdAndIsDeletedFalse(targetUserId);
+
+                if (requesterOpt.isEmpty()) {
+                    return ResponseEntity.status(403).body(
+                        BaseResponseDTO.error(403, "Forbidden: Requester not found")
+                    );
+                }
+                if (targetOpt.isEmpty()) {
+                    return ResponseEntity.status(404).body(
+                        BaseResponseDTO.error(404, "User not found")
+                    );
+                }
+
+                String sarprasUnit = requesterOpt.get().getUnit();
+                String targetUnit = targetOpt.get().getUnit();
+
+                if (sarprasUnit == null || !sarprasUnit.equals(targetUnit)) {
+                    return ResponseEntity.status(403).body(
+                        BaseResponseDTO.error(403, "Forbidden: You can only access password history of users in your unit")
+                    );
+                }
             }
 
             // Ambil password history

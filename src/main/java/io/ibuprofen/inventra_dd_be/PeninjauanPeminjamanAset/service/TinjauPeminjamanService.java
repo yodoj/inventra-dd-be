@@ -12,7 +12,9 @@ public interface TinjauPeminjamanService {
             StatusPeminjaman statusPeminjaman, 
             String unitTujuan, 
             LocalDate tanggal, 
-            String kategoriAset
+            LocalDate tanggalPengembalian,
+            String kategoriAset,
+            String search
     );
     
     TinjauPeminjamanResponseDTO create(UUID idPeminjaman, TinjauPeminjamanRequestDTO request);
