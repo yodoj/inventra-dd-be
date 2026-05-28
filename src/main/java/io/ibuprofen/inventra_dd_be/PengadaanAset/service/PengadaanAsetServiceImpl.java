@@ -90,7 +90,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
 
     // Fungsi untuk mendapatkan semua pengadaan aset dengan filter dan sorting
     @Override
-    public List<PengadaanAsetResponse> getAllPengadaan(String search, String statusPengadaan, String kategoriAset, String sortBy, String direction) {
+    public List<PengadaanAsetResponse> getAllPengadaan(String search, String statusPengadaan, String kategoriAset, String sortBy, String direction, String unit) {
         UserDetailsImpl userDetails = getCurrentUser();
 
         // Penentuan field untuk sorting berdasarkan input parameter
@@ -143,13 +143,33 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                         ? null
                         : kategoriAset.trim().toUpperCase();
 
-        List<PengadaanAset> results = pengadaanRepository.findByUserWithAllFilters(
-                userDetails.getId(),
-                normalizedSearch,
-                normalizedStatus,
-                normalizedKategori,
-                sort
-        );
+        String normalizedUnit =
+                (unit == null || unit.isBlank() || "SEMUA UNIT".equalsIgnoreCase(unit))
+                        ? null
+                        : unit.trim().toUpperCase();
+
+        List<PengadaanAset> results;
+        Set<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toSet());
+
+        if (roles.contains("ADMIN")) {
+            results = pengadaanRepository.findAllWithAllFilters(
+                    normalizedSearch,
+                    normalizedStatus,
+                    normalizedKategori,
+                    normalizedUnit,
+                    sort
+            );
+        } else {
+            results = pengadaanRepository.findByUserWithAllFilters(
+                    userDetails.getId(),
+                    normalizedSearch,
+                    normalizedStatus,
+                    normalizedKategori,
+                    sort
+            );
+        }
 
         return results.stream()
                 .map(this::mapToResponse)
@@ -168,10 +188,13 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                 .collect(Collectors.toSet());
 
         // Validasi akses
-        if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
+        boolean isAdmin = roles.contains("ADMIN");
+
+        if (!isAdmin && !pengadaan.getUserId().getId().equals(userDetails.getId())) {
             throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses ke data ini");
         }
-        if (!roles.contains("ADMIN")){
+        
+        if (!isAdmin) {
             if (pengadaan.getUnit() == null || !pengadaan.getUnit().equals(userDetails.getUnit())) {
                 throw new IllegalStateException("Unit tidak sesuai dengan akses Anda");
             }
@@ -246,7 +269,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         }
 
         // Logika penentuan unit berdasarkan peran saat update
-        if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
+        if (roles.contains("ADMIN")) {
             if (request.getUnit() == null || request.getUnit().trim().isEmpty()) {
                 throw new IllegalArgumentException("Admin wajib menentukan unit untuk pengadaan ini.");
             }
@@ -287,6 +310,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     private PengadaanAsetResponse mapToResponse(PengadaanAset p) {
         return PengadaanAsetResponse.builder()
                 .idPengadaan(p.getIdPengadaan())
+                .userId(p.getUserId().getId())
                 .waktuPengajuan(p.getWaktuPengajuan())
                 .unit(p.getUnit())
                 .namaAset(p.getNamaAset())
@@ -314,6 +338,9 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         }
         return PengadaanAsetDetailResponse.builder()
                 .idPengadaan(p.getIdPengadaan())
+                .userId(p.getUserId().getId())
+                .namaPengaju(p.getNamaPengaju())
+                .rolePengaju(p.getRolePengaju())
                 .waktuPengajuan(p.getWaktuPengajuan())
                 .unit(p.getUnit())
                 .namaAset(p.getNamaAset())
@@ -341,4 +368,4 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
             throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
         }
     }
-}
+}

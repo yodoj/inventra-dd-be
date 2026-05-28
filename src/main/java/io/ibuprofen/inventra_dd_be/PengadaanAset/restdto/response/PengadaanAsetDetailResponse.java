@@ -18,6 +18,15 @@ public class PengadaanAsetDetailResponse {
     @JsonProperty("id_pengadaan")
     private UUID idPengadaan;
 
+    @JsonProperty("user_id")
+    private UUID userId;
+
+    @JsonProperty("nama_pengaju")
+    private String namaPengaju;
+
+    @JsonProperty("role_pengaju")
+    private String rolePengaju;
+
     // Waktu saat pengaju menekan tombol kirim di sistem
     @JsonProperty("waktu_pengajuan")
     private LocalDateTime waktuPengajuan;

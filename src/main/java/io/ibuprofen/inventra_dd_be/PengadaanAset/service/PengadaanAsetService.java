@@ -15,7 +15,8 @@ public interface PengadaanAsetService {
         String statusPengadaan, 
         String kategoriAset, 
         String sortBy, 
-        String direction);
+        String direction,
+        String unit);
 
     PengadaanAsetDetailResponse getPengadaanById(UUID id);
 

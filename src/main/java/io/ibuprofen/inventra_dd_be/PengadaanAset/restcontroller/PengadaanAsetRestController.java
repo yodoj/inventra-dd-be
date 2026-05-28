@@ -41,10 +41,11 @@ public class PengadaanAsetRestController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String kategori,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) String direction) {
+            @RequestParam(required = false) String direction,
+            @RequestParam(required = false) String unit) {
 
         List<PengadaanAsetResponse> result = pengadaanAsetService.getAllPengadaan(
-                search, status, kategori, sortBy, direction
+                search, status, kategori, sortBy, direction, unit
         );
 
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data pengajuan pengadaan berhasil diambil"));

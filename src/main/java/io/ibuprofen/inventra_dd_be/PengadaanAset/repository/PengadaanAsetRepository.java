@@ -52,6 +52,25 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
             @Param("kategoriAset") String kategoriAset,
             Sort sort);
 
+    @Query(value = """
+        SELECT pa.*
+        FROM pengadaan_aset pa
+        WHERE (
+                :search IS NULL
+                OR UPPER(pa.nama_aset) LIKE CONCAT('%', :search, '%')
+                OR UPPER(pa.merk) LIKE CONCAT('%', :search, '%')
+          )
+          AND (:statusPengadaan IS NULL OR UPPER(pa.status_pengadaan) = :statusPengadaan)
+          AND (:kategoriAset IS NULL OR UPPER(pa.kategori_aset) = :kategoriAset)
+          AND (:unit IS NULL OR UPPER(pa.unit) = UPPER(:unit))
+        """, nativeQuery = true)
+    List<PengadaanAset> findAllWithAllFilters(
+            @Param("search") String search,
+            @Param("statusPengadaan") String statusPengadaan,
+            @Param("kategoriAset") String kategoriAset,
+            @Param("unit") String unit,
+            Sort sort);
+
     // Query untuk dashboard pengadaan aset
     // Total Pengadaan (Card)
     @Query("""
