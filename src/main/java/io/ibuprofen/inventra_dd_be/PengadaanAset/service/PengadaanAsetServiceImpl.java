@@ -52,7 +52,12 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setQty(request.getQty());
         pengadaan.setEstimasiHarga(request.getEstimasiHarga());
         pengadaan.setWaktuPengadaan(request.getWaktuPengadaan());
-        pengadaan.setLinkGambar(request.getLinkGambar());
+
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            pengadaan.setLinkGambar("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            pengadaan.setLinkGambar(request.getLinkGambar());
+        }
         
         // Inisialisasi status pengadaan menjadi "DIAJUKAN" saat dibuat
         pengadaan.setStatusPengadaan("DIAJUKAN");
@@ -233,7 +238,12 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setQty(request.getQty()); 
         pengadaan.setEstimasiHarga(request.getEstimasiHarga()); 
         pengadaan.setWaktuPengadaan(request.getWaktuPengadaan()); 
-        pengadaan.setLinkGambar(request.getLinkGambar()); 
+        
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            pengadaan.setLinkGambar("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            pengadaan.setLinkGambar(request.getLinkGambar());
+        }
 
         // Logika penentuan unit berdasarkan peran saat update
         if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
@@ -317,4 +327,18 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                 .reviewPengajuan(alasan) 
                 .build();
     }
-}
+
+    private String saveFileToLocal(org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename().replaceAll("\\s+", "_");
+            java.nio.file.Path root = java.nio.file.Paths.get("uploads/assets");
+            if (!java.nio.file.Files.exists(root)) {
+                java.nio.file.Files.createDirectories(root);
+            }
+            java.nio.file.Files.copy(file.getInputStream(), root.resolve(filename), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            return filename;
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
+        }
+    }
+}
