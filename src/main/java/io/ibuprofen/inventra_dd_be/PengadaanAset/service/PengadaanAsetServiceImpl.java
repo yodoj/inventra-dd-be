@@ -52,7 +52,12 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setQty(request.getQty());
         pengadaan.setEstimasiHarga(request.getEstimasiHarga());
         pengadaan.setWaktuPengadaan(request.getWaktuPengadaan());
-        pengadaan.setLinkGambar(request.getLinkGambar());
+
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            pengadaan.setLinkGambar("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            pengadaan.setLinkGambar(request.getLinkGambar());
+        }
         
         // Inisialisasi status pengadaan menjadi "DIAJUKAN" saat dibuat
         pengadaan.setStatusPengadaan("DIAJUKAN");
@@ -85,7 +90,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
 
     // Fungsi untuk mendapatkan semua pengadaan aset dengan filter dan sorting
     @Override
-    public List<PengadaanAsetResponse> getAllPengadaan(String search, String statusPengadaan, String kategoriAset, String sortBy, String direction) {
+    public List<PengadaanAsetResponse> getAllPengadaan(String search, String statusPengadaan, String kategoriAset, String sortBy, String direction, String unit) {
         UserDetailsImpl userDetails = getCurrentUser();
 
         // Penentuan field untuk sorting berdasarkan input parameter
@@ -138,13 +143,33 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                         ? null
                         : kategoriAset.trim().toUpperCase();
 
-        List<PengadaanAset> results = pengadaanRepository.findByUserWithAllFilters(
-                userDetails.getId(),
-                normalizedSearch,
-                normalizedStatus,
-                normalizedKategori,
-                sort
-        );
+        String normalizedUnit =
+                (unit == null || unit.isBlank() || "SEMUA UNIT".equalsIgnoreCase(unit))
+                        ? null
+                        : unit.trim().toUpperCase();
+
+        List<PengadaanAset> results;
+        Set<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toSet());
+
+        if (roles.contains("ADMIN")) {
+            results = pengadaanRepository.findAllWithAllFilters(
+                    normalizedSearch,
+                    normalizedStatus,
+                    normalizedKategori,
+                    normalizedUnit,
+                    sort
+            );
+        } else {
+            results = pengadaanRepository.findByUserWithAllFilters(
+                    userDetails.getId(),
+                    normalizedSearch,
+                    normalizedStatus,
+                    normalizedKategori,
+                    sort
+            );
+        }
 
         return results.stream()
                 .map(this::mapToResponse)
@@ -163,10 +188,13 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                 .collect(Collectors.toSet());
 
         // Validasi akses
-        if (!pengadaan.getUserId().getId().equals(userDetails.getId())) {
+        boolean isAdmin = roles.contains("ADMIN");
+
+        if (!isAdmin && !pengadaan.getUserId().getId().equals(userDetails.getId())) {
             throw new org.springframework.security.access.AccessDeniedException("Anda tidak memiliki akses ke data ini");
         }
-        if (!roles.contains("ADMIN")){
+        
+        if (!isAdmin) {
             if (pengadaan.getUnit() == null || !pengadaan.getUnit().equals(userDetails.getUnit())) {
                 throw new IllegalStateException("Unit tidak sesuai dengan akses Anda");
             }
@@ -233,10 +261,15 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         pengadaan.setQty(request.getQty()); 
         pengadaan.setEstimasiHarga(request.getEstimasiHarga()); 
         pengadaan.setWaktuPengadaan(request.getWaktuPengadaan()); 
-        pengadaan.setLinkGambar(request.getLinkGambar()); 
+        
+        if (request.getGambarFile() != null && !request.getGambarFile().isEmpty()) {
+            pengadaan.setLinkGambar("/uploads/assets/" + saveFileToLocal(request.getGambarFile()));
+        } else {
+            pengadaan.setLinkGambar(request.getLinkGambar());
+        }
 
         // Logika penentuan unit berdasarkan peran saat update
-        if (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN")) {
+        if (roles.contains("ADMIN")) {
             if (request.getUnit() == null || request.getUnit().trim().isEmpty()) {
                 throw new IllegalArgumentException("Admin wajib menentukan unit untuk pengadaan ini.");
             }
@@ -277,6 +310,7 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
     private PengadaanAsetResponse mapToResponse(PengadaanAset p) {
         return PengadaanAsetResponse.builder()
                 .idPengadaan(p.getIdPengadaan())
+                .userId(p.getUserId().getId())
                 .waktuPengajuan(p.getWaktuPengajuan())
                 .unit(p.getUnit())
                 .namaAset(p.getNamaAset())
@@ -304,6 +338,9 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
         }
         return PengadaanAsetDetailResponse.builder()
                 .idPengadaan(p.getIdPengadaan())
+                .userId(p.getUserId().getId())
+                .namaPengaju(p.getNamaPengaju())
+                .rolePengaju(p.getRolePengaju())
                 .waktuPengajuan(p.getWaktuPengajuan())
                 .unit(p.getUnit())
                 .namaAset(p.getNamaAset())
@@ -316,5 +353,19 @@ public class PengadaanAsetServiceImpl implements PengadaanAsetService {
                 .statusPengadaan(p.getStatusPengadaan())
                 .reviewPengajuan(alasan) 
                 .build();
+    }
+
+    private String saveFileToLocal(org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename().replaceAll("\\s+", "_");
+            java.nio.file.Path root = java.nio.file.Paths.get("uploads/assets");
+            if (!java.nio.file.Files.exists(root)) {
+                java.nio.file.Files.createDirectories(root);
+            }
+            java.nio.file.Files.copy(file.getInputStream(), root.resolve(filename), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            return filename;
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Gagal menyimpan file: " + e.getMessage());
+        }
     }
 }

@@ -40,13 +40,14 @@ public class CreatePengadaanAsetRequestDTO {
 
     // Tanggal rencana pengadaan, format: yyyy-MM-dd dan harus di masa depan
     @NotNull(message = "Waktu pengadaan tidak boleh kosong")
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Future(message = "Tanggal pengadaan tidak boleh hari ini atau lampau")
     private LocalDate waktuPengadaan;
     
-    @NotBlank(message = "Link gambar tidak boleh kosong") 
-    @URL(message = "Format link gambar tidak valid (harus http/https)")
     private String linkGambar;
+
+    private org.springframework.web.multipart.MultipartFile gambarFile;
 
     private String unit; 
 }
