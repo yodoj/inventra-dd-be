@@ -22,7 +22,6 @@ public class CreateAsetBarangRequestDTO {
     @NotNull(message = "Kategori aset tidak boleh boleh kosong")
     private KategoriAset kategoriAset;
 
-    @NotNull(message = "Status aset tidak boleh boleh kosong")
     private StatusAset statusAset;
 
     private String keteranganAset;
