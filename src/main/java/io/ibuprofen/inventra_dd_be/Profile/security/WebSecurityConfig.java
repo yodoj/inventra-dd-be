@@ -1,8 +1,10 @@
 package io.ibuprofen.inventra_dd_be.Profile.security;
 
+import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthAccessDeniedHandler;
 import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthEntryPointJwt;
 import io.ibuprofen.inventra_dd_be.Profile.security.jwt.AuthTokenFilter;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsServiceImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsServiceImpl;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +37,9 @@ public class WebSecurityConfig {
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
 
+    @Autowired
+    private AuthAccessDeniedHandler accessDeniedHandler;
+
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
@@ -64,10 +69,13 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(unauthorizedHandler)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/home").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
 
         http.authenticationProvider(authenticationProvider());
@@ -80,7 +88,11 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("*"));
+            configuration.setAllowedOrigins(Arrays.asList(
+            "https://inventra-dd.vercel.app", 
+            "http://localhost:5173", 
+            "http://localhost:8080"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-api-key"));
         configuration.setExposedHeaders(Collections.singletonList("Authorization"));

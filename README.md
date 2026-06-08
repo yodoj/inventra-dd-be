@@ -521,4 +521,3 @@ Fokus pada pengolahan data agregat dan ekspor dokumen.
 * **RBAC:** Setiap endpoint dilindungi oleh pengecekan role sesuai spesifikasi backlog.
 * **Validasi Input:** Mengembalikan error `400 Bad Request` jika format tanggal atau parameter tidak sesuai.
 * **Autentikasi:** Mengembalikan `401/403` untuk token atau role yang tidak valid.
-

@@ -3,9 +3,8 @@ package io.ibuprofen.inventra_dd_be.Profile.restcontroller;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.request.LoginRequest;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.BaseResponseDTO;
 import io.ibuprofen.inventra_dd_be.Profile.restdto.response.JwtResponse;
-import io.ibuprofen.inventra_dd_be.Profile.restdto.response.MessageResponse;
 import io.ibuprofen.inventra_dd_be.Profile.security.jwt.JwtUtils;
-import io.ibuprofen.inventra_dd_be.Profile.security.services.UserDetailsImpl;
+import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +27,11 @@ public class AuthRestController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        System.out.println("Login attempt for email: " + loginRequest.getEmail());
+        String email = loginRequest.getEmail().trim();
+        System.out.println("Login attempt for email: " + email);
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+                    new UsernamePasswordAuthenticationToken(email, loginRequest.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String jwt = jwtUtils.generateJwtToken(authentication);
@@ -56,10 +56,12 @@ public class AuthRestController {
 
             return ResponseEntity.ok(BaseResponseDTO.ok(jwtResponse, "Login successful"));
         } catch (AuthenticationException e) {
-            System.err.println("Authentication failed for email: " + loginRequest.getEmail() + " | Error: " + e.getMessage());
-            return ResponseEntity.status(401).body(BaseResponseDTO.error(401, "Error: Invalid email or password"));
+            System.err.println(
+                    "Authentication failed for email: " + loginRequest.getEmail() + " | Error: " + e.getMessage());
+            return ResponseEntity.status(401).body(BaseResponseDTO.error(401, "Invalid email or password"));
         } catch (Exception e) {
-            System.err.println("Unexpected error during login for email: " + loginRequest.getEmail() + " | Error: " + e.getMessage());
+            System.err.println("Unexpected error during login for email: " + loginRequest.getEmail() + " | Error: "
+                    + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(BaseResponseDTO.error(500, "Error: An unexpected error occurred"));
         }

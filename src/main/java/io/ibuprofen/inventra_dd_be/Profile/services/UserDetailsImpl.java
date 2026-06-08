@@ -1,4 +1,4 @@
-package io.ibuprofen.inventra_dd_be.Profile.security.services;
+package io.ibuprofen.inventra_dd_be.Profile.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.ibuprofen.inventra_dd_be.Profile.model.User;
