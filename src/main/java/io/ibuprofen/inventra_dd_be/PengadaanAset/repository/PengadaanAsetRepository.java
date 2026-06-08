@@ -52,6 +52,25 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
             @Param("kategoriAset") String kategoriAset,
             Sort sort);
 
+    @Query(value = """
+        SELECT pa.*
+        FROM pengadaan_aset pa
+        WHERE (
+                :search IS NULL
+                OR UPPER(pa.nama_aset) LIKE CONCAT('%', :search, '%')
+                OR UPPER(pa.merk) LIKE CONCAT('%', :search, '%')
+          )
+          AND (:statusPengadaan IS NULL OR UPPER(pa.status_pengadaan) = :statusPengadaan)
+          AND (:kategoriAset IS NULL OR UPPER(pa.kategori_aset) = :kategoriAset)
+          AND (:unit IS NULL OR UPPER(pa.unit) = UPPER(:unit))
+        """, nativeQuery = true)
+    List<PengadaanAset> findAllWithAllFilters(
+            @Param("search") String search,
+            @Param("statusPengadaan") String statusPengadaan,
+            @Param("kategoriAset") String kategoriAset,
+            @Param("unit") String unit,
+            Sort sort);
+
     // Query untuk dashboard pengadaan aset
     // Total Pengadaan (Card)
     @Query("""
@@ -94,7 +113,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
         FROM PengadaanAset p
         WHERE (:tahun IS NULL OR EXTRACT(YEAR FROM p.waktuPengadaan) = :tahun)
         AND (:bulan IS NULL OR EXTRACT(MONTH FROM p.waktuPengadaan) = :bulan)
-        AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+        AND (:kategori IS NULL OR p.kategoriAset = :kategori)
         AND (:unit IS NULL OR p.unit = :unit)
         AND p.statusPengadaan = 'DIBELI'
         GROUP BY LOWER(p.namaAset)
@@ -205,7 +224,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
                OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
                OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
           AND (:status IS NULL OR p.statusPengadaan = :status)
-          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (:kategori IS NULL OR p.kategoriAset = :kategori)
           AND (:filterUnit IS NULL OR p.unit = :filterUnit)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
@@ -232,7 +251,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
                OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
                OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
           AND (:status IS NULL OR p.statusPengadaan = :status)
-          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (:kategori IS NULL OR p.kategoriAset = :kategori)
           AND (:filterUnit IS NULL OR p.unit = :filterUnit)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
@@ -288,7 +307,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
                OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
                OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
           AND (:status IS NULL OR p.statusPengadaan = :status)
-          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (:kategori IS NULL OR p.kategoriAset = :kategori)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:fromDateTime AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDateTime)
@@ -315,7 +334,7 @@ public interface PengadaanAsetRepository extends JpaRepository<PengadaanAset, UU
                OR CAST(FUNCTION('replace', LOWER(p.merk), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')
                OR (t.alasan IS NOT NULL AND CAST(FUNCTION('replace', LOWER(t.alasan), ' ', '') AS string) LIKE CONCAT('%', CAST(:search AS string), '%')))
           AND (:status IS NULL OR p.statusPengadaan = :status)
-          AND (:kategori IS NULL OR CAST(p.kategoriAset AS string) = :kategori)
+          AND (:kategori IS NULL OR p.kategoriAset = :kategori)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:bulan AS integer) IS NULL OR EXTRACT(MONTH FROM p.waktuPengajuan) = :bulan)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:tahun AS integer) IS NULL OR EXTRACT(YEAR FROM p.waktuPengajuan) = :tahun)
           AND (:dateField = 'tanggal_pengadaan' OR CAST(:fromDateTime AS timestamp) IS NULL OR p.waktuPengajuan >= :fromDateTime)

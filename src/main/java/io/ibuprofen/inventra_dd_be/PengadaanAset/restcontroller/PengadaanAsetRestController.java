@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,9 +24,9 @@ public class PengadaanAsetRestController {
     private PengadaanAsetService pengadaanAsetService;
 
     // Endpoint untuk membuat pengajuan pengadaan aset baru
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
-    public ResponseEntity<?> createPengadaan(@Valid @RequestBody CreatePengadaanAsetRequestDTO request) {
+    public ResponseEntity<?> createPengadaan(@Valid @ModelAttribute CreatePengadaanAsetRequestDTO request) {
         PengadaanAsetDetailResponse result = pengadaanAsetService.createPengadaan(request);
         
         return ResponseEntity.status(201)
@@ -40,10 +41,11 @@ public class PengadaanAsetRestController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String kategori,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) String direction) {
+            @RequestParam(required = false) String direction,
+            @RequestParam(required = false) String unit) {
 
         List<PengadaanAsetResponse> result = pengadaanAsetService.getAllPengadaan(
-                search, status, kategori, sortBy, direction
+                search, status, kategori, sortBy, direction, unit
         );
 
         return ResponseEntity.ok(BaseResponseDTO.ok(result, "Data pengajuan pengadaan berhasil diambil"));
@@ -68,11 +70,11 @@ public class PengadaanAsetRestController {
     }
 
     // Endpoint untuk memperbarui pengajuan pengadaan aset berdasarkan ID
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('GURU', 'SARPRAS', 'ADMIN')")
     public ResponseEntity<?> updatePengadaan(
             @PathVariable UUID id, 
-            @Valid @RequestBody UpdatePengadaanAsetRequestDTO request) {
+            @Valid @ModelAttribute UpdatePengadaanAsetRequestDTO request) {
         
         PengadaanAsetDetailResponse result = pengadaanAsetService.updatePengadaan(id, request);
         

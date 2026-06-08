@@ -10,9 +10,7 @@ import io.ibuprofen.inventra_dd_be.PeminjamanAset.model.PeminjamanAset;
 import io.ibuprofen.inventra_dd_be.Profile.services.UserDetailsImpl;
 import io.ibuprofen.inventra_dd_be.LaporanUtilisasi.repository.LaporanUtilisasiRepository;
 import com.lowagie.text.*;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.pdf.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -289,15 +287,34 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         List<PeminjamanAset> allData = laporanUtilisasiRepository.findAll(spec);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Document document = new Document(PageSize.A4.rotate());
-        PdfWriter.getInstance(document, baos);
+        
+        // Use custom margins: 36f left/right/top, 50f bottom to accommodate footer
+        Document document = new Document(PageSize.A4.rotate(), 36f, 36f, 36f, 50f);
+        PdfWriter writer = PdfWriter.getInstance(document, baos);
+
+        // Prepare footer metadata details
+        String userName = userDetails.getName() != null ? userDetails.getName() : "-";
+        String userRole = userDetails.getAuthorities().isEmpty() ? "-" : userDetails.getAuthorities().iterator().next().getAuthority().toUpperCase();
+        String userUnit = userDetails.getUnit();
+
+        String roleAndUnit = userRole;
+        if (userUnit != null && !userUnit.trim().isEmpty()) {
+            roleAndUnit += " (" + userUnit.toUpperCase() + ")";
+        }
+
+        String tgl = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy", new Locale("id", "ID")));
+        String jam = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+
+        String footerText = String.format("Dicetak oleh %s (%s) pada %s, %s.", userName, roleAndUnit, tgl, jam);
+        writer.setPageEvent(new PDFHeaderFooter(footerText));
 
         document.open();
         
-        // Add Title
+        // Add Title colored #00588F
         Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
         fontTitle.setSize(18);
-        String titleText = isFrequency ? "Laporan Frekuensi Peminjaman Aset" : "Laporan Riwayat Peminjaman Aset";
+        fontTitle.setColor(new Color(0, 88, 143)); // #00588F
+        String titleText = isFrequency ? "LAPORAN FREKUENSI PEMINJAMAN ASET" : "LAPORAN RIWAYAT PEMINJAMAN ASET";
         if (userUnitForRbac != null && !userUnitForRbac.trim().isEmpty()) {
             titleText += " " + userUnitForRbac.toUpperCase();
         }
@@ -305,12 +322,144 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         title.setAlignment(Paragraph.ALIGN_CENTER);
         document.add(title);
 
-        // Add Period Label
-        String periodeLabel = generatePeriodeLabel(periodType, resolvedStart, resolvedEnd);
-        Paragraph periode = new Paragraph("Periode: " + periodeLabel, FontFactory.getFont(FontFactory.HELVETICA));
-        periode.setAlignment(Paragraph.ALIGN_CENTER);
-        periode.setSpacingAfter(20);
-        document.add(periode);
+        // Center underline helper
+        PdfPTable lineTable = new PdfPTable(1);
+        lineTable.setWidthPercentage(30f); // 30% of width
+        lineTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+        PdfPCell lineCell = new PdfPCell();
+        lineCell.setBorder(Rectangle.BOTTOM);
+        lineCell.setBorderWidthBottom(0.5f);
+        lineCell.setBorderColorBottom(new Color(0, 88, 143));
+        lineCell.setFixedHeight(5f);
+        lineTable.addCell(lineCell);
+        lineTable.setSpacingAfter(15);
+        document.add(lineTable);
+
+        // Build active filters
+        List<String[]> activeFilters = new ArrayList<>();
+
+        // 1. Unit Filter
+        String resolvedUnit = null;
+        if (userUnitForRbac != null && !userUnitForRbac.trim().isEmpty()) {
+            resolvedUnit = userUnitForRbac.toUpperCase();
+        } else if (unitFilter != null && !unitFilter.trim().isEmpty() && !unitFilter.equalsIgnoreCase("Semua Unit")) {
+            resolvedUnit = unitFilter.toUpperCase();
+        }
+        if (resolvedUnit != null) {
+            activeFilters.add(new String[]{"Unit", resolvedUnit});
+        }
+
+        // 2. Kategori Aset Filter
+        if (kategori != null && !kategori.trim().isEmpty() && !kategori.equalsIgnoreCase("Semua Kategori")) {
+            String displayKategori = kategori;
+            if ("BARANG".equalsIgnoreCase(kategori)) {
+                displayKategori = "Barang";
+            } else if ("RUANGAN".equalsIgnoreCase(kategori)) {
+                displayKategori = "Ruangan";
+            }
+            activeFilters.add(new String[]{"Kategori Aset", displayKategori});
+        }
+
+        // 3. Periode Filter (always added)
+        if (periodType != null && !periodType.trim().isEmpty() && resolvedStart != null && resolvedEnd != null) {
+            if ("monthly".equalsIgnoreCase(periodType)) {
+                String[] indonesianMonths = {
+                    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                };
+                String monthName = indonesianMonths[resolvedStart.getMonthValue() - 1];
+                activeFilters.add(new String[]{"Periode", monthName + " " + resolvedStart.getYear()});
+            } else if ("yearly".equalsIgnoreCase(periodType)) {
+                activeFilters.add(new String[]{"Tahun", String.valueOf(resolvedStart.getYear())});
+            } else if ("daily".equalsIgnoreCase(periodType)) {
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+                activeFilters.add(new String[]{"Rentang Tanggal", resolvedStart.format(dtf) + "  s/d  " + resolvedEnd.format(dtf)});
+            }
+        } else if (startDate != null || endDate != null) {
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            String fromStr = startDate != null ? startDate.format(dtf) : "...";
+            String toStr = endDate != null ? endDate.format(dtf) : "...";
+            activeFilters.add(new String[]{"Rentang Tanggal", fromStr + "  s/d  " + toStr});
+        } else {
+            // Default period
+            activeFilters.add(new String[]{"Periode", "Jan - Des " + LocalDate.now().getYear()});
+        }
+
+        // 4. Pencarian Filter
+        if (search != null && !search.trim().isEmpty()) {
+            activeFilters.add(new String[]{"Pencarian", "\"" + search.trim() + "\""});
+        }
+
+        // Render "FILTER YANG DITERAPKAN" box
+        PdfPTable filterTable = new PdfPTable(2);
+        filterTable.setWidthPercentage(100f);
+        try {
+            filterTable.setWidths(new float[]{1f, 4.5f});
+        } catch (Exception e) {
+            // ignore
+        }
+        filterTable.setSpacingAfter(15);
+
+        // Header cell
+        PdfPCell headerCell = new PdfPCell();
+        headerCell.setColspan(2);
+        headerCell.setBackgroundColor(new Color(0, 88, 143));
+        headerCell.setBorderColor(new Color(0, 88, 143));
+        headerCell.setPadding(5);
+        
+        Font fontHeader = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
+        fontHeader.setColor(Color.WHITE);
+        fontHeader.setSize(10);
+        headerCell.setPhrase(new Phrase("FILTER YANG DITERAPKAN", fontHeader));
+        filterTable.addCell(headerCell);
+
+        Color zebraColor = new Color(241, 245, 249);
+        Color whiteColor = Color.WHITE;
+        Color borderColor = new Color(203, 213, 225);
+        Color darkBlueBorder = new Color(0, 88, 143);
+
+        Font fontKey = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
+        fontKey.setSize(9.5f);
+        fontKey.setColor(new Color(15, 23, 42));
+
+        Font fontVal = FontFactory.getFont(FontFactory.HELVETICA);
+        fontVal.setSize(9.5f);
+        fontVal.setColor(new Color(51, 65, 85));
+
+        int idx = 0;
+        for (String[] pair : activeFilters) {
+            Color bg = (idx % 2 == 0) ? zebraColor : whiteColor;
+            idx++;
+
+            // Key cell
+            PdfPCell keyCell = new PdfPCell(new Phrase(pair[0], fontKey));
+            keyCell.setBackgroundColor(bg);
+            keyCell.setPadding(5);
+            keyCell.setBorder(Rectangle.LEFT | Rectangle.BOTTOM | Rectangle.RIGHT);
+            keyCell.setBorderColor(borderColor);
+            if (idx == activeFilters.size()) {
+                keyCell.setBorderColorBottom(darkBlueBorder);
+                keyCell.setBorderWidthBottom(1f);
+            }
+            keyCell.setBorderColorLeft(darkBlueBorder);
+            keyCell.setBorderWidthLeft(1f);
+            filterTable.addCell(keyCell);
+
+            // Value cell
+            PdfPCell valCell = new PdfPCell(new Phrase(pair[1], fontVal));
+            valCell.setBackgroundColor(bg);
+            valCell.setPadding(5);
+            valCell.setBorder(Rectangle.BOTTOM | Rectangle.RIGHT);
+            valCell.setBorderColor(borderColor);
+            if (idx == activeFilters.size()) {
+                valCell.setBorderColorBottom(darkBlueBorder);
+                valCell.setBorderWidthBottom(1f);
+            }
+            valCell.setBorderColorRight(darkBlueBorder);
+            valCell.setBorderWidthRight(1f);
+            filterTable.addCell(valCell);
+        }
+        document.add(filterTable);
 
         if (allData.isEmpty()) {
             Paragraph empty = new Paragraph("Data tidak tersedia", FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE));
@@ -396,6 +545,82 @@ public class LaporanUtilisasiServiceImpl implements LaporanUtilisasiService {
         for (String header : headers) {
             cell.setPhrase(new Phrase(header, font));
             table.addCell(cell);
+        }
+    }
+
+    private static class PDFHeaderFooter extends PdfPageEventHelper {
+        private PdfTemplate totalPagesTemplate;
+        private BaseFont baseFont;
+        private final String printedByText;
+
+        public PDFHeaderFooter(String printedByText) {
+            this.printedByText = printedByText;
+            try {
+                this.baseFont = BaseFont.createFont(BaseFont.HELVETICA_OBLIQUE, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
+            } catch (Exception e) {
+                // fallback
+            }
+        }
+
+        @Override
+        public void onOpenDocument(PdfWriter writer, Document document) {
+            totalPagesTemplate = writer.getDirectContent().createTemplate(30, 16);
+        }
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            PdfContentByte cb = writer.getDirectContent();
+            float pgW = writer.getPageSize().getWidth();
+
+            // Draw line above footer
+            cb.setColorStroke(new Color(203, 213, 225));
+            cb.setLineWidth(0.5f);
+            cb.moveTo(36, 35);
+            cb.lineTo(pgW - 36, 35);
+            cb.stroke();
+
+            cb.beginText();
+            try {
+                if (baseFont != null) {
+                    cb.setFontAndSize(baseFont, 9);
+                } else {
+                    cb.setFontAndSize(BaseFont.createFont(BaseFont.HELVETICA_OBLIQUE, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED), 9);
+                }
+            } catch (Exception e) {
+                // ignore
+            }
+            cb.setColorFill(new Color(100, 116, 139));
+
+            // Left side page number prefix
+            String pageText = "Halaman " + writer.getPageNumber() + " dari ";
+            cb.setTextMatrix(36, 20);
+            cb.showText(pageText);
+            float len = cb.getEffectiveStringWidth(pageText, false);
+
+            // Right side printed by
+            cb.showTextAligned(PdfContentByte.ALIGN_RIGHT, printedByText, pgW - 36, 20, 0);
+            cb.endText();
+
+            // Add template for total pages
+            cb.addTemplate(totalPagesTemplate, 36 + len, 20);
+        }
+
+        @Override
+        public void onCloseDocument(PdfWriter writer, Document document) {
+            totalPagesTemplate.beginText();
+            try {
+                if (baseFont != null) {
+                    totalPagesTemplate.setFontAndSize(baseFont, 9);
+                } else {
+                    totalPagesTemplate.setFontAndSize(BaseFont.createFont(BaseFont.HELVETICA_OBLIQUE, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED), 9);
+                }
+            } catch (Exception e) {
+                // ignore
+            }
+            totalPagesTemplate.setColorFill(new Color(100, 116, 139));
+            totalPagesTemplate.setTextMatrix(0, 0);
+            totalPagesTemplate.showText(String.valueOf(writer.getPageNumber() - 1));
+            totalPagesTemplate.endText();
         }
     }
 }

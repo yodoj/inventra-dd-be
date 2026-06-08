@@ -113,7 +113,7 @@ public class AsetServiceImpl implements AsetService {
         }
 
         asetBarang.setKategoriAset(request.getKategoriAset());
-        asetBarang.setStatusAset(request.getStatusAset());
+        asetBarang.setStatusAset(io.ibuprofen.inventra_dd_be.Aset.model.StatusAset.TERSEDIA); // Always TERSEDIA on creation
         asetBarang.setKeteranganAset(request.getKeteranganAset());
         asetBarang.setMerkAset(request.getMerkAset());
         asetBarang.setQtyAset(request.getQtyAset());
